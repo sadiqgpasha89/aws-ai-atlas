@@ -978,7 +978,7 @@
       '</div>';
     });
 
-    // Microsoft Learn Hub
+    // AWS Architecture Hub
     h += '<h2>Official AWS Architecture Resources</h2>' +
       '<div class="grid" style="margin:16px 0">';
     l.officialResources.forEach(function (res) {
@@ -1047,7 +1047,7 @@
     $$('.stepper').forEach(function (el) { if (el._stop) el._stop(); });
     var parts = location.hash.replace(/^#\/?/, '').split('/'), kind = parts[0] || '', id = parts[1] || '';
     pendingSteppers = []; afterRender = null;
-    var html, title = 'Azure for AI/ML Systems — an interactive atlas';
+    var html, title = 'AWS for AI/ML Systems — an interactive atlas';
     if (kind === 's' && byId[id]) { html = pageService(id); title = byId[id].name + ' — AWS for AI/ML Systems'; }
     else if (kind === 'c' && catById[id]) { html = pageCategory(id); title = catById[id].name + ' — AWS for AI/ML Systems'; }
     else if (kind === 'a') { if (id && archById[id]) { html = pageArch(id); title = archById[id].name + ' — AWS for AI/ML Systems'; } else html = pageArchIndex(); }
@@ -1127,10 +1127,10 @@
     { type: 'Tool', href: '#/d/shaper', name: 'Solution shaper', id: 'shaper', tag: 'Get a starting stack, risks and next decisions for your use case', cat: 'Tool', hay: 'recommend stack wizard rag agent starting point' },
     { type: 'Tool', href: '#/d/checklists', name: 'Readiness checklists', id: 'checklists', tag: 'Maturity ladder, production readiness and decision record template', cat: 'Tool', hay: 'production readiness launch checklist adr decision record maturity prototype pilot scale' },
     { type: 'Tool', href: '#/d/calculator', name: 'Cost per task calculator', id: 'calculator', tag: 'Unit economics for LLM features and the levers that cut cost', cat: 'Tool', hay: 'price tokens caching batch unit economics budget' },
-    { type: 'Governance', href: '#/gov', name: 'Enterprise AI Governance & Landing Zones', id: 'gov', tag: 'CAF Landing zones, network isolation, 8-pillar security framework, tenancy models', cat: 'Governance', hay: 'landing zone caf hierarchy vnet private link firewall security framework tenancy azure policy' },
-    { type: 'Operations', href: '#/ops', name: 'Production AI Operations Centre', id: 'ops', tag: '10-widget dashboard template, KQL queries, SRE runbooks, postmortem template', cat: 'Operations', hay: 'dashboard kql runbook 429 throttling postmortem incident sre latency ttft kusto' },
+    { type: 'Governance', href: '#/gov', name: 'Enterprise AI Governance & Landing Zones', id: 'gov', tag: 'AWS Control Tower landing zones, network isolation, 8-pillar security framework, tenancy models', cat: 'Governance', hay: 'landing zone control tower multi account hierarchy vpc transit gateway private link security framework tenancy scp aws config' },
+    { type: 'Operations', href: '#/ops', name: 'Production AI Operations Centre', id: 'ops', tag: '10-widget dashboard template, CloudWatch queries, SRE runbooks, postmortem template', cat: 'Operations', hay: 'dashboard cloudwatch query runbook 429 throttling postmortem incident sre latency ttft bedrock' },
     { type: 'Toolkit', href: '#/toolkit', name: 'AI Engineering Manager Toolkit', id: 'toolkit', tag: 'Use-case assessment, estimation, RACI, RAID, quality gates, skills matrix', cat: 'Toolkit', hay: 'toolkit assessment estimation raci raid quality gates vendor skills executive status report template' },
-    { type: 'Labs', href: '#/labs', name: 'Hands-on Labs & Learning Roadmaps', id: 'labs', tag: 'Role roadmaps, 5 implementation labs, Microsoft Learn links', cat: 'Labs', hay: 'labs exercises tutorial roadmaps learn curriculum hands-on' }
+    { type: 'Labs', href: '#/labs', name: 'Hands-on Labs & Learning Roadmaps', id: 'labs', tag: 'Role roadmaps, 5 implementation labs, AWS Architecture links', cat: 'Labs', hay: 'labs exercises tutorial roadmaps learn curriculum hands-on' }
   ]);
   function openSearch() { overlay.hidden = false; q.value = ''; runSearch(); q.focus(); }
   function closeSearch() { overlay.hidden = true; }
