@@ -1,10 +1,16 @@
 # AWS for AI/ML Systems — an interactive atlas
 
+**Live site: https://sadiqgpasha89.github.io/aws-ai-atlas/**
+
 A static, no-build website that explains the AWS services you use to build AI and ML systems: what each one is, how it works step by step (with an animated stepper), the gotchas and edge cases, and how to use it in larger systems.
 
 - **69 services** in **11 categories**: Compute & Accelerators, Storage, Databases & Vector Stores, Data & Analytics, Streaming & Orchestration, Generative AI, ML Platform (SageMaker), Pre-built AI Services, Networking & Delivery, Security & Identity, Observability & Operations.
 - **6 reference architectures** (RAG assistant, self-hosted LLM serving, MLOps, agent platform, document intelligence, real-time features), each a step-through diagram whose boxes link to the service pages.
-- **4 decision tables** (where to run a model, which vector store, how to orchestrate, how to improve a model).
+- **Leader toolkit** for engineering managers and principal engineers building agentic and ML systems:
+  - **14 decision guides** (build/buy/customise, autonomy level, how to improve a model, where the model runs, agent hosting, vector store, inference pattern, capacity, orchestration, training compute, evaluation, human-in-the-loop, cost levers, tenancy). Each has an options table, if/then rules, red flags, design-review questions, a revisit trigger and a one-way/two-way-door marker.
+  - **Solution shaper**: seven questions in, a starting stack, risks and the decisions to make next out (copyable as markdown).
+  - **Readiness checklists**: a prototype-to-scale maturity ladder, a 38-item production-readiness checklist (progress saved in the browser) and a decision-record template.
+  - **Cost-per-task calculator** with a what-if table for caching, batching, routing and fewer calls.
 - Search (`/` or `Ctrl/Cmd+K`), light and dark themes, keyboard-friendly steppers, responsive layout.
 
 Pure HTML, CSS and JavaScript. No framework, no bundler, no dependencies.
@@ -20,7 +26,7 @@ python3 -m http.server 8000
 
 1. Create a new GitHub repository (for example `aws-ai-atlas`) and push this folder to its `main` branch.
 2. In the repository go to **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. Push to `main`. The workflow in `.github/workflows/pages.yml` validates the data and deploys. Your site appears at `https://<your-user>.github.io/<repo>/`.
+3. Push to `main`. The workflow in `.github/workflows/pages.yml` validates the data and deploys. This repo's site appears at `https://sadiqgpasha89.github.io/aws-ai-atlas/` (for a fork or rename, it is `https://<your-user>.github.io/<repo>/`).
 
 All asset paths are relative and routing uses the URL hash (`#/s/bedrock`), so it works under a project sub-path with no configuration.
 
@@ -32,7 +38,9 @@ assets/style.css        design tokens, layout, components, dark theme
 assets/app.js           router, pages, isometric diagrams, stepper, search
 data/core.js            category definitions + the S() helper
 data/<category>.js      one file of services per category
-data/architectures.js   reference architectures + decision tables
+data/architectures.js   reference architectures
+data/decisions.js       decision guides (options, rules, red flags, review questions)
+data/playbooks.js       maturity ladder, readiness checklist, ADR template, solution shaper rules
 scripts/check.mjs       data validator (runs in CI)
 ```
 
@@ -65,6 +73,10 @@ node scripts/check.mjs
 ```
 
 It checks for unknown references, step indexes outside the diagram, nodes no step ever visits, unbalanced markup, and missing fields.
+
+## Add or edit a decision guide
+
+Append an object to `ATLAS.decisions` in `data/decisions.js` (fields are listed at the top of that file). Table cells can link services with `[[service-id|label]]`. `node scripts/check.mjs` checks the schema, every link, and runs the solution shaper over all 5,832 answer combinations to make sure each recommendation points at real services and guides. If you change the shaper rules in `data/playbooks.js`, run it again.
 
 ## A note on accuracy
 

@@ -180,3 +180,120 @@ td:first-child{font-weight:700;white-space:nowrap}
   .lists.two{grid-template-columns:1fr}
 }
 @media (max-width:520px){.search-btn span,.search-btn kbd{display:none}.brand em{display:none}}
+
+/* sidebar top-level links */
+.side .nl{display:block;padding:6px 8px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600}
+.side .nl:hover{background:var(--line)}
+.side .nl[aria-current=page]{color:var(--accent)}
+
+/* decisions */
+.door{display:inline-block;font:700 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:99px;border:1.5px solid currentColor;white-space:nowrap}
+.door.two-way{color:var(--ok)}
+.door.one-way{color:var(--warn)}
+.door.mixed{color:#8a6a12}
+[data-theme=dark] .door.mixed{color:#e6c35c}
+.doorline{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0 4px}
+.doorline span:last-child{flex:1;min-width:220px;color:var(--muted)}
+.rules{display:grid;gap:10px}
+.rule{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);border:1px solid var(--line2);border-radius:12px;background:var(--paper);overflow:hidden}
+.rule>div{padding:12px 16px}
+.rule small{display:block;font:700 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.rule .then{background:var(--accent-soft);border-left:1px solid var(--line2)}
+.rule .then small{color:var(--accent)}
+
+/* shaper */
+.shaper{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:28px;align-items:start;margin-top:22px}
+.shform{display:grid;gap:14px;position:sticky;top:calc(var(--top) + 14px);max-height:calc(100vh - var(--top) - 28px);overflow:auto;padding-right:4px}
+.shform fieldset,.calcform fieldset{border:1px solid var(--line2);border-radius:12px;background:var(--paper);margin:0;padding:10px 14px 12px;min-width:0}
+.shform legend,.calcform legend{font:700 13px var(--sans);padding:0 6px}
+.shform fieldset[hidden]{display:none}
+.opt{display:flex;gap:9px;align-items:flex-start;padding:6px 4px;cursor:pointer;font-size:14px;line-height:1.4;border-radius:8px}
+.opt:hover{background:var(--line)}
+.opt input{margin-top:3px;accent-color:var(--accent);flex:none}
+.shout{background:var(--paper);border:1px solid var(--line2);border-radius:16px;padding:18px 22px 22px;box-shadow:5px 5px 0 var(--line);min-width:0}
+.shout h3{margin-top:22px}
+.stack{list-style:none;margin:8px 0;padding:0;display:grid;gap:8px}
+.stack li{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:start;font-size:14px}
+.stack .svc{display:inline-block;font:700 13px var(--sans);padding:4px 10px;border-radius:9px;text-decoration:none;background:hsl(var(--h) 60% 90%);color:hsl(var(--h) 55% 22%)}
+[data-theme=dark] .stack .svc{background:hsl(var(--h) 30% 24%);color:hsl(var(--h) 70% 85%)}
+.stack span{color:var(--muted)} .stack span b{color:var(--ink)}
+.nextl{list-style:none;margin:8px 0;padding:0;display:grid;gap:10px;font-size:14px}
+.nextl span{color:var(--muted)}
+.nextl .door{margin-left:6px;font-size:10px;padding:1px 7px}
+.phases{margin:8px 0;padding-left:22px;font-size:14px}
+.phases li{margin:7px 0}
+
+/* checklists */
+.ladder{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.rung{background:var(--paper);border:1px solid var(--line2);border-radius:14px;padding:14px 16px 12px;position:relative;font-size:14px}
+.rung:nth-child(1){border-top:4px solid hsl(40 70% 55%)}
+.rung:nth-child(2){border-top:4px solid hsl(25 70% 52%)}
+.rung:nth-child(3){border-top:4px solid hsl(150 45% 42%)}
+.rung:nth-child(4){border-top:4px solid hsl(205 55% 48%)}
+.rung .rn{position:absolute;right:14px;top:8px;font:700 30px var(--serif);color:var(--line2)}
+.rung h3{margin:2px 0 2px}
+.rung .mini{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.rung h4{font:700 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ok);margin:12px 0 2px}
+.rung h4.no{color:var(--warn)}
+.rung ul{margin:4px 0;padding-left:18px}.rung li{margin:5px 0}
+.rung .nope{color:var(--muted);margin:2px 0 0}
+.ready-bar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:16px 0 4px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:var(--paper)}
+.seg button{font:600 13px var(--sans);border:0;background:none;color:var(--ink);padding:7px 14px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
+.prog{display:flex;align-items:center;gap:10px;flex:1;min-width:200px;font:600 13px var(--mono);color:var(--muted)}
+.track{flex:1;height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.fill{height:100%;width:0;background:var(--ok);transition:width .25s}
+.chklist{list-style:none;margin:6px 0 4px;padding:0;display:grid;gap:6px}
+.chk{display:flex;gap:11px;align-items:flex-start;background:var(--paper);border:1px solid var(--line2);border-radius:11px;padding:10px 14px;cursor:pointer;font-size:14px}
+.chk:hover{border-color:var(--accent)}
+.chk input{margin-top:4px;width:17px;height:17px;accent-color:var(--ok);flex:none}
+.chk .t{display:block;font-weight:600}
+.chk .w{display:block;color:var(--muted);margin-top:2px}
+.chk .s{display:block;font-size:13px;margin-top:4px}
+.chk input:checked+span .t{text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
+.codebar{margin:8px 0}
+pre.adr{background:var(--paper);border:1px solid var(--line2);border-radius:12px;padding:16px 18px;overflow:auto;font:13px/1.55 var(--mono);white-space:pre;margin:0;max-height:480px}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:28px;align-items:start;margin-top:22px}
+.calcform{display:grid;gap:14px}
+.num{display:block;padding:7px 4px 4px}
+.num .nl2{display:block;font-size:13px;font-weight:600;margin-bottom:3px}
+.num .inp{display:flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:9px;background:var(--bg);padding:0 10px}
+.num .inp i{font-style:normal;color:var(--muted);font-size:13px}
+.num input{flex:1;min-width:0;border:0;background:none;color:var(--ink);font:15px var(--mono);padding:8px 0;outline:none}
+.num .inp:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.num small{display:block;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.4}
+.calcout{background:var(--paper);border:1px solid var(--line2);border-radius:16px;padding:18px 22px 22px;box-shadow:5px 5px 0 var(--line);min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kpi{border:1px solid var(--line2);border-radius:12px;padding:10px 14px;background:var(--bg)}
+.kpi small{display:block;font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi b{font:700 24px var(--serif);display:block;margin-top:2px;overflow-wrap:anywhere}
+.split{display:flex;height:16px;border-radius:99px;overflow:hidden;background:var(--line);margin:8px 0}
+.split span,.legend i{background:var(--c)}
+.s1{--c:hsl(25 70% 52%)}.s2{--c:hsl(205 55% 48%)}.s3{--c:hsl(150 45% 42%)}
+.legend{list-style:none;display:flex;gap:16px;flex-wrap:wrap;padding:0;margin:0;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.calcout td.dn{color:var(--ok);font-weight:700}.calcout td.up{color:var(--warn);font-weight:700}
+.calcout td:first-child{min-width:200px}
+.fine{font-size:13px;color:var(--muted)}
+
+@media (max-width:980px){
+  .shaper,.calc{grid-template-columns:1fr}
+  .shform{position:static;max-height:none;overflow:visible}
+}
+@media (max-width:620px){
+  .rule{grid-template-columns:1fr}
+  .rule .then{border-left:0;border-top:1px solid var(--line2)}
+  .stack li{grid-template-columns:1fr;gap:3px}
+}
+.calcout table{min-width:0}
+.calcout th,.calcout td{padding:9px 10px}
+.calcout td:first-child{min-width:0;white-space:normal}
+.calcout table{font-size:13px}
+@media (max-width:1180px){
+  .shaper,.calc{grid-template-columns:1fr}
+  .shform{position:static;max-height:none;overflow:visible}
+}
