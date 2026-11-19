@@ -71,8 +71,18 @@ for (const d of A.decisions) {
   const p = `decision ${d.id}`;
   if (decIds.has(d.id)) err(`${p}: duplicate id`); decIds.add(d.id);
   if (!/^[a-z0-9-]+$/.test(d.id)) err(`${p}: id must match [a-z0-9-]+`);
-  if (['shaper', 'checklists', 'calculator'].includes(d.id)) err(`${p}: id clashes with a tool route`);
+  if (['shaper', 'checklists', 'calculator', 'em', 'pe', 'all'].includes(d.id)) err(`${p}: id clashes with a tool route`);
   if (!themeIds.has(d.theme)) err(`${p}: unknown theme ${d.theme}`);
+  if (!['em', 'pe', 'both'].includes(d.lead)) err(`${p}: lead must be em, pe or both`);
+  for (const role of ['em', 'pe']) {
+    const x = d[role];
+    if (!x || typeof x !== 'object') { err(`${p}: missing ${role} lens`); continue; }
+    checkText(`${p}.${role}.call`, x.call);
+    for (const k of ['own', 'evidence']) {
+      if (!Array.isArray(x[k]) || x[k].length < 2) err(`${p}.${role}.${k}: needs at least 2 entries`);
+      (x[k] || []).forEach((t, i) => checkText(`${p}.${role}.${k}[${i}]`, t));
+    }
+  }
   if (!['two-way', 'one-way', 'mixed'].includes(d.door)) err(`${p}: door must be two-way, one-way or mixed`);
   for (const k of ['title', 'question', 'doorNote', 'why', 'revisit']) checkText(`${p}.${k}`, d[k]);
   if (!Array.isArray(d.cols) || d.cols.length < 3) err(`${p}: cols needs at least 3 columns`);
@@ -90,6 +100,19 @@ for (const d of A.decisions) {
   (d.related || []).forEach(x => { if (!ids.has(x)) err(`${p}: related references unknown service ${x}`); });
 }
 for (const t of A.decisionThemes) if (!A.decisions.some(d => d.theme === t.id)) err(`theme ${t.id}: has no decisions`);
+
+// roles (decision tabs)
+if (!Array.isArray(A.roles) || A.roles.length !== 2 || A.roles.map(r => r.id).join() !== 'em,pe') err('roles: expected [em, pe]');
+for (const r of A.roles || []) {
+  const p = `role ${r.id}`;
+  for (const k of ['name', 'blurb']) checkText(`${p}.${k}`, r[k]);
+  for (const k of ['owns']) { if (!Array.isArray(r[k]) || r[k].length < 3) err(`${p}.${k}: needs at least 3 entries`); (r[k] || []).forEach((t, i) => checkText(`${p}.${k}[${i}]`, t)); }
+  if (!Array.isArray(r.quick) || r.quick.length < 5) err(`${p}.quick: needs at least 5 rows`);
+  (r.quick || []).forEach(([sit, call, dec], i) => { checkText(`${p}.quick[${i}].situation`, sit); checkText(`${p}.quick[${i}].call`, call); if (!decIds.has(dec)) err(`${p}.quick[${i}]: unknown decision ${dec}`); });
+  if (!Array.isArray(r.rhythm) || r.rhythm.length < 3) err(`${p}.rhythm: needs at least 3 rows`);
+  (r.rhythm || []).forEach(([when, what], i) => { checkText(`${p}.rhythm[${i}].when`, when); checkText(`${p}.rhythm[${i}].what`, what); });
+}
+for (const role of ['em', 'pe']) if (!A.decisions.some(d => d.lead === role)) err(`no decision is led by ${role}`);
 
 // playbooks
 if (!Array.isArray(A.ladder) || A.ladder.length !== 4) err('ladder: expected 4 stages');
@@ -111,6 +134,57 @@ for (const g of A.readiness) {
   }
 }
 if (typeof A.adrTemplate !== 'string' || A.adrTemplate.length < 200) err('adrTemplate missing');
+
+// engineering playbooks
+if (!Array.isArray(A.engineeringPlaybooks) || A.engineeringPlaybooks.length < 5) err('engineeringPlaybooks: expected at least 5 playbooks');
+for (const p of A.engineeringPlaybooks || []) {
+  const loc = `playbook ${p.id}`;
+  for (const k of ['title', 'badge', 'tag', 'intro']) checkText(`${loc}.${k}`, p[k]);
+  for (const sec of p.sections || []) {
+    checkText(`${loc}.${sec.title}`, sec.title);
+    if (sec.body) checkText(`${loc}.${sec.title}.body`, sec.body);
+    for (const b of sec.bullets || []) checkText(`${loc}.${sec.title}.bullet`, b);
+    for (const tip of sec.tips || []) checkText(`${loc}.${sec.title}.tip`, tip);
+  }
+  (p.see || []).forEach(r => {
+    const [k, id] = r.split(':');
+    if (k === 'svc' && !ids.has(id)) err(`${loc}: see unknown service ${id}`);
+    else if (k === 'dec' && !decIds.has(id)) err(`${loc}: see unknown decision ${id}`);
+    else if (k === 'arch' && !archIds.has(id)) err(`${loc}: see unknown architecture ${id}`);
+  });
+}
+
+// governance
+if (!A.governance || typeof A.governance !== 'object') err('governance: missing A.governance');
+else {
+  const g = A.governance;
+  if (!g.landingZones || !g.securityFramework || !g.tenancyModels || !g.policyInitiatives) err('governance: missing core sections');
+  checkText('governance.landingZones.title', g.landingZones.title);
+  checkText('governance.landingZones.intro', g.landingZones.intro);
+}
+
+// operations
+if (!A.operations || typeof A.operations !== 'object') err('operations: missing A.operations');
+else {
+  if (!A.operations.dashboardTemplate || !Array.isArray(A.operations.dashboardTemplate.widgets) || A.operations.dashboardTemplate.widgets.length < 10) err('operations: dashboardTemplate needs at least 10 widgets');
+  if (!Array.isArray(A.operations.runbooks) || A.operations.runbooks.length < 4) err('operations: expected at least 4 runbooks');
+  if (!A.operations.postmortemTemplate || typeof A.operations.postmortemTemplate.templateMarkdown !== 'string' || A.operations.postmortemTemplate.templateMarkdown.length < 200) err('operations: missing postmortemTemplate');
+}
+
+// toolkit
+if (!A.toolkit || typeof A.toolkit !== 'object') err('toolkit: missing A.toolkit');
+else {
+  for (const k of ['useCaseAssessment', 'projectEstimation', 'raciMatrix', 'raidTracker', 'qualityGates', 'vendorMatrix', 'skillsMatrix']) {
+    if (!A.toolkit[k]) err(`toolkit: missing ${k}`);
+  }
+}
+
+// labs
+if (!A.labs || typeof A.labs !== 'object') err('labs: missing A.labs');
+else {
+  if (!Array.isArray(A.labs.learningPaths) || A.labs.learningPaths.length < 3) err('labs: expected at least 3 learningPaths');
+  if (!Array.isArray(A.labs.exercises) || A.labs.exercises.length < 5) err('labs: expected at least 5 exercises');
+}
 
 // solution shaper: exhaustively run every answer combination
 const Q = A.shaper.questions;
@@ -140,6 +214,6 @@ for (const c of A.categories) {
 }
 
 const words = A.services.reduce((n, s) => n + JSON.stringify(s).split(/\s+/).length, 0);
-console.log(`${A.categories.length} categories, ${A.services.length} services, ${A.architectures.length} architectures, ${A.decisions.length} decision guides, ${A.readiness.reduce((n, g) => n + g.items.length, 0)} readiness items, ${combos} shaper combinations checked, ~${words} words in services`);
+console.log(`${A.categories.length} categories, ${A.services.length} services, ${A.architectures.length} architectures, ${A.decisions.length} decision guides (+ em/pe role tabs), ${A.readiness.reduce((n, g) => n + g.items.length, 0)} readiness items, ${combos} shaper combinations checked, ~${words} words in services`);
 if (errs.length) { console.error(`\n${errs.length} problem(s):`); errs.forEach(e => console.error(' - ' + e)); process.exit(1); }
 console.log('data OK');

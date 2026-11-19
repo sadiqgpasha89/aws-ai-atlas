@@ -365,3 +365,279 @@ window.ATLAS.shaper = {
     return { headline: headline, arch: arch, stack: stack, risks: risks, next: next, phases: phases };
   }
 };
+
+
+window.ATLAS.engineeringPlaybooks = [
+  {
+    "id": "rag-engineering",
+    "title": "Enterprise RAG Engineering Playbook",
+    "badge": "Core Pattern",
+    "tag": "Document ingestion, layout chunking, hybrid search tuning, reranking and quality metrics.",
+    "intro": "Retrieval-Augmented Generation (RAG) is not a single prompt trick — it is a distributed data retrieval and ranking system. In enterprise deployments, generation quality is overwhelmingly constrained by retrieval recall. This playbook outlines the production engineering practices for building high-precision RAG on AWS.",
+    "sections": [
+      {
+        "title": "1. Document Cracking and Ingestion",
+        "body": "Never use naive PDF text dumpers on enterprise documents. Real-world documents contain multi-column layouts, tables, headers, embedded diagrams and scanned pages that standard text splitters flatten into useless noise.\n\nUse [[textract|Amazon Textract]] layout analysis (`Layout` feature). It outputs semantic Markdown preserving document headers (`#`, `##`), reading order across columns, and structured HTML/Markdown tables. For multimodal documents containing charts and photos, integrate [[rekognition]] and vision models to extract visual bounding box descriptions.",
+        "tips": [
+          "**Always extract tables as Markdown:** Tables converted to raw text lose cell coordinate meaning; Markdown tables allow embedding models and LLMs to preserve column-row relationships.",
+          "**Capture document metadata during cracking:** Extract author, department, creation date, and Cognito security group identifiers into metadata tags for downstream security trimming."
+        ]
+      },
+      {
+        "title": "2. Chunking Algorithms and Boundaries",
+        "body": "Chunk size directly governs the trade-off between retrieval specificity and conversational context. Chunks under 200 tokens lack sufficient semantic context; chunks over 1,500 tokens dilute vector embeddings and inflate LLM input costs.\n\nAdopt **Document-Aware Layout Chunking** and **Hierarchical Parent-Child Chunking**:",
+        "bullets": [
+          "**Layout-Aware Chunking:** Split at logical Markdown section boundaries (`##`) rather than arbitrary character counts. Prepend the document title and section path to every chunk.",
+          "**Parent-Child Indexing:** In [[bedrock-kb|Bedrock Knowledge Bases]] or [[opensearch|OpenSearch Serverless]], index small child passages (200-300 tokens) for dense vector search, but retrieve and inject the parent section (1,000-1,500 tokens) into the LLM prompt to give the model complete context.",
+          "**Sliding Window Overlap:** Maintain 10-15% token overlap across sequential chunks to prevent semantic truncation of cross-boundary statements."
+        ]
+      },
+      {
+        "title": "3. Hybrid Search Tuning and Semantic Reranking",
+        "body": "Dense vector search alone fails on alphanumeric strings: product SKUs, invoice numbers, software error codes, and customer identifiers. Pure keyword search fails on synonyms and conceptual phrasing.\n\nProduction enterprise RAG on AWS must configure **Hybrid Search** combining dense vectors and BM25 full-text search, fused via Reciprocal Rank Fusion (RRF), followed by a **Semantic Cross-Encoder Reranker** (such as Cohere Rerank or Bedrock Rerank).",
+        "bullets": [
+          "**Reciprocal Rank Fusion (RRF):** Evaluates ranks from dense vector and BM25 keyword passes in [[opensearch]], scoring candidates by `1 / (60 + rank)`. This balances keyword precision and semantic intent without manual weight tuning.",
+          "**Semantic Reranker:** Evaluates the top 50 RRF candidates through a deep cross-encoder model, boosting relevant passages to the top 3-5 positions. This yields a 15-25% lift in NDCG@10 at a modest 100-200ms latency cost.",
+          "**Bedrock Knowledge Bases:** AWS managed knowledge layer around OpenSearch Serverless automates multi-query decomposition and parallel knowledge source execution."
+        ]
+      },
+      {
+        "title": "4. Measurable RAG Quality Indicators",
+        "body": "Do not judge RAG quality by manual spot-checking or subjective demo reviews. Track formal statistical evaluation metrics separated into retrieval quality and generation quality:",
+        "bullets": [
+          "**Recall@K (Target: >85% at K=5):** The fraction of ground-truth relevant passages successfully surfaced in the top K retrieved results.",
+          "**MRR (Mean Reciprocal Rank):** Evaluates how close to the top position the first relevant passage appears.",
+          "**NDCG@K (Normalized Discounted Cumulative Gain):** Measures graded relevance and ranking quality of the retrieved set.",
+          "**Groundedness / Faithfulness (Target: >95%):** The percentage of generated claims in the final answer that can be strictly deduced from retrieved context.",
+          "**Answer Relevance (Target: >90%):** How directly the synthesized response answers the user's prompt without extraneous filler.",
+          "**Citation Precision (Target: >98%):** Percentage of inline citations that point to an actual supporting statement in the source passage."
+        ]
+      }
+    ],
+    "see": [
+      "arch:traditional-rag",
+      "arch:agentic-rag",
+      "dec:vector-hybrid-search",
+      "dec:chunking-strategy",
+      "dec:reranking-tradeoff",
+      "svc:opensearch",
+      "svc:textract"
+    ]
+  },
+  {
+    "id": "agent-engineering",
+    "title": "Multi-Agent Engineering & Orchestration Playbook",
+    "badge": "Emerging Standard",
+    "tag": "Orchestration patterns, framework selection, memory persistence, MCP tools and safety gates.",
+    "intro": "Moving from a single chatbot to an autonomous multi-agent system shifts engineering focus from prompt design to distributed systems design: state machines, distributed transactions, memory lifecycles, and tool authorization. This playbook outlines the architectural patterns and production guardrails required to operate multi-agent systems reliably on AWS.",
+    "sections": [
+      {
+        "title": "1. Multi-Agent Orchestration Patterns",
+        "body": "Avoid unstructured peer-to-peer agent swarms in production; uncoordinated agents enter conversational deadlocks and experience rapid context bloat. Choose one of three proven coordination topologies:",
+        "bullets": [
+          "**Supervisor-Worker (Hub and Spoke):** A central coordinator agent breaks user tasks into sub-goals, delegates them to specialized workers (Researcher, Coder, Reviewer), and synthesizes final output.",
+          "**Sequential Pipeline (Assembly Line):** Agents pass structured data sequentially through deterministic stages (Extract -> Validate -> Format -> Post). Best when steps are ordered and auditable.",
+          "**Hierarchical Consensus:** Worker agents produce candidate proposals; an independent critic agent evaluates proposals against compliance and safety rubrics before final approval."
+        ]
+      },
+      {
+        "title": "2. Runtime Selection & Tool Contracts",
+        "body": "Choose between managed and code-first runtimes based on autonomy requirements. Use [[bedrock-agents|Amazon Bedrock Agents]] for managed enterprise workflows with Action Groups. Use [[agentcore]] or code-first frameworks (LangGraph, AutoGen) hosted on [[ecs]] or [[lambda]] for complex state machines.\n\nEnforce strict tool interface boundaries:",
+        "bullets": [
+          "**Narrow, Typed Tool Schemas:** Define tool input parameters with strict JSON Schema types. Avoid generic `query: string` inputs; demand structured fields like `account_id: integer` and `start_date: string`.",
+          "**Server-Side Tool Validation:** Never trust model-generated arguments blindly. Tool Lambda functions must validate inputs against backend business rules and authorization scopes.",
+          "**Model Context Protocol (MCP):** Standardize tool integrations on MCP servers to decouple tools from proprietary model SDKs."
+        ]
+      },
+      {
+        "title": "3. State Persistence and Session Memory",
+        "body": "Agents require persistent working memory to maintain context across multi-step execution graphs and user interaction turns.",
+        "bullets": [
+          "**Short-Term Scratchpad:** Temporary key-value state held in memory during single-run execution.",
+          "**Long-Term Conversational Memory:** Persist conversation turns and checkpointed state in [[dynamodb]] keyed by `session_id` with TTL expiration.",
+          "**Semantic Long-Term Memory:** Store user preferences, past decisions, and summarized knowledge in [[opensearch]] or [[bedrock-kb]] for cross-session retrieval."
+        ]
+      },
+      {
+        "title": "4. Safety Boundaries & Circuit Breakers",
+        "body": "Autonomous agents can consume thousands of dollars in minutes if caught in recursive reasoning loops. Hard operational boundaries are non-negotiable:",
+        "tips": [
+          "**Maximum Iteration Cap:** Enforce a hard ceiling of 5 tool turns per task. Terminate execution and trigger human escalation if the agent has not reached a conclusion.",
+          "**Wall-Clock Timeout:** Enforce an explicit timeout (e.g. 60 seconds) on agent graph execution via [[stepfunctions]].",
+          "**Human-in-the-Loop (HITL) Write Gates:** Require cryptographic human approval via Step Functions pause tasks for all writes, financial transactions, or external emails."
+        ]
+      }
+    ],
+    "see": [
+      "arch:multiagent-orchestration",
+      "arch:agentic-rag",
+      "dec:agent-runtime",
+      "dec:workflow-vs-agent",
+      "dec:human-in-loop",
+      "svc:bedrock-agents",
+      "svc:agentcore",
+      "svc:stepfunctions"
+    ]
+  },
+  {
+    "id": "genaiops",
+    "title": "GenAIOps Lifecycle & Evaluation Playbook",
+    "badge": "Operational Rigor",
+    "tag": "Golden datasets, automated evaluation gates, CI/CD pipelines, and drift detection.",
+    "intro": "Traditional DevOps monitors deterministic code compilation and test execution. GenAIOps monitors stochastic system health: prompt drift, statistical evaluation degradation, regression testing, and continuous benchmarking. This playbook details how to operationalize continuous quality engineering for generative AI on AWS.",
+    "sections": [
+      {
+        "title": "1. The Golden Evaluation Dataset",
+        "body": "Subjective spot-testing in the AWS console is the most dangerous anti-pattern in generative AI. You cannot manage what you do not measure.\n\nEvery production AI project must maintain a versioned **Golden Evaluation Dataset** in Git alongside application code:",
+        "bullets": [
+          "**Curate 100-500 Representative Queries:** Include typical user questions, difficult multi-hop edge cases, adversarial prompt injection attacks, and out-of-domain queries.",
+          "**Ground-Truth Annotations:** Pair each query with verified ground-truth reference passages and ideal answers signed off by business domain experts.",
+          "**Automated Synthetic Expansion:** Use [[bedrock]] foundation models to generate 1,000+ synthetic question-answer pairs from raw documents, and filter pairs with low confidence scores."
+        ]
+      },
+      {
+        "title": "2. Multi-Tiered Evaluation Metrics",
+        "body": "Run automated evaluations on every prompt, model, or retrieval change using a two-tier evaluation framework:",
+        "bullets": [
+          "**Deterministic Rule-Based Tests:** Fast, zero-cost checks verifying JSON Schema compliance, regex patterns, keyword inclusions/exclusions, and blocked term detection.",
+          "**LLM-as-a-Judge Statistical Scoring:** Pass model output, ground-truth references, and retrieved context to an independent evaluator model using [[sm-monitor|SageMaker Model Monitor]] or Bedrock Evaluations.",
+          "**Evaluation Dimensions:** Score Groundedness/Faithfulness (>95%), Answer Relevance (>90%), Context Recall (>85%), and Toxicity/Safety (0 violations)."
+        ]
+      },
+      {
+        "title": "3. Automated CI/CD Evaluation Release Gates",
+        "body": "Embed automated evaluation suites directly into GitHub Actions or AWS CodePipeline builds targeting `main`:",
+        "bullets": [
+          "**Pull Request Evaluation Sweep:** Execute the 100-case core evaluation dataset on every PR touching prompts, chunking code, or tool definitions.",
+          "**Hard Quality Gates:** Automatically block merge if Groundedness drops by more than 2% or if any critical safety violation is detected.",
+          "**Cryptographic Release Pinning:** Pin prompt templates, model versions, temperature, and search configurations into immutable deployment packages."
+        ]
+      },
+      {
+        "title": "4. Canary Deployment & Online Drift Monitoring",
+        "body": "Offline evaluations cannot predict real-world user query distribution shifts. Deploy updates with canary traffic routing and live telemetry:",
+        "tips": [
+          "**Canary Routing:** Route 10% of production traffic to the candidate prompt or model via [[apigw|API Gateway]] or [[sm-inference|SageMaker Inference]] canary deployments.",
+          "**Online Feedback Capture:** Log explicit user feedback (thumbs up/down) and implicit signals (copy-to-clipboard, retry frequency) to [[cloudwatch]].",
+          "**Automated Rollback:** Configure CloudWatch alarms on P95 latency, 429 throttling errors, or negative feedback spikes to trigger instant automated rollback within 5 minutes."
+        ]
+      }
+    ],
+    "see": [
+      "arch:genaiops-lifecycle",
+      "dec:evaluation",
+      "dec:improve-model",
+      "svc:sm-monitor",
+      "svc:bedrock",
+      "svc:cloudwatch"
+    ]
+  },
+  {
+    "id": "security-hardening",
+    "title": "Enterprise Security Hardening Playbook",
+    "badge": "Enterprise Readiness",
+    "tag": "Zero-trust network boundaries, prompt defense, data masking, document security and IAM least privilege.",
+    "intro": "Generative AI introduces novel enterprise attack surfaces: direct and indirect prompt injection, sensitive data leakage into public training sets, and compromised autonomous tool executions. This playbook provides the definitive security hardening checklist for AWS AI architectures.",
+    "sections": [
+      {
+        "title": "1. Zero-Trust Network Perimeter",
+        "body": "No production AI service should ever expose a public internet endpoint. Enforce strict private connectivity:",
+        "bullets": [
+          "**AWS PrivateLink VPC Endpoints:** Access Bedrock, OpenSearch Serverless, SageMaker, and S3 exclusively through PrivateLink interface endpoints within private VPC subnets.",
+          "**Disable Public Network Access:** Explicitly block public network access on all S3 buckets, OpenSearch collections, and SageMaker endpoints.",
+          "**Egress Filtering:** Force all outbound internet traffic from container hosts and Lambda functions through AWS Network Firewall for FQDN filtering."
+        ]
+      },
+      {
+        "title": "2. Identity Propagation & Least Privilege",
+        "body": "Authenticate workloads using short-lived managed identities and propagate end-user credentials to all downstream retrieval layers:",
+        "bullets": [
+          "**Disable Long-Lived API Keys:** Never store AWS secret access keys in application configuration. Authenticate using IAM roles for EC2, ECS task roles, or Lambda execution roles.",
+          "**Delegated User Authorization:** Propagate caller identity claims from [[cognito]] through [[apigw]] so retrieval and tool execution act with user permissions rather than administrative access.",
+          "**Least-Privilege Action Groups:** Restrict Bedrock Agent action groups to narrow IAM policies granting access only to specific Lambda functions and DynamoDB tables."
+        ]
+      },
+      {
+        "title": "3. Prompt Injection Defense & Content Safety",
+        "body": "Defend against both direct jailbreak attacks (users attempting to bypass guardrails) and indirect prompt injection (hidden commands in retrieved documents):",
+        "bullets": [
+          "**Guardrails for Amazon Bedrock:** Enable Prompt Attacks filters to block direct jailbreak attempts and system prompt extraction.",
+          "**Delimited System Prompts:** Isolate untrusted retrieved documents inside unambiguous XML tags (`<context>...</context>`) with strict model instructions to ignore instructions inside tags.",
+          "**Sensitive Information Filters:** Configure Bedrock Guardrails regex and managed PII filters to automatically mask Social Security numbers, credit cards, and corporate API tokens.",
+          "**Pre-Execution Tool Screening:** Screen tool call arguments against regex patterns before invoking backend database functions."
+        ]
+      },
+      {
+        "title": "4. Document-Level Security Trimming",
+        "body": "In enterprise RAG, users must only retrieve information they have explicit permission to access in source systems:",
+        "tips": [
+          "**Index-Level Access Tags:** Tag every chunk in [[opensearch]] with a list of authorized user IDs and security group IDs.",
+          "**Mandatory Backend Filter Injection:** The backend search proxy must inject a mandatory `terms` filter matching caller security group claims extracted from verified JWT tokens.",
+          "**Cryptographic Data Revocation:** Encrypt all S3 documents and OpenSearch indexes with dedicated Customer-Managed Keys in [[kms]]. Revoking key access renders tenant data permanently unreadable."
+        ]
+      }
+    ],
+    "see": [
+      "arch:secure-multitenant-rag",
+      "dec:tenancy",
+      "dec:human-in-loop",
+      "svc:bedrock-guardrails",
+      "svc:iam",
+      "svc:kms",
+      "svc:waf"
+    ]
+  },
+  {
+    "id": "sre-operations",
+    "title": "Production AI SRE & Reliability Playbook",
+    "badge": "Operations & SRE",
+    "tag": "10 operational indicators, 429 throttling mitigation, latency budgets, runbooks and postmortems.",
+    "intro": "Operating generative AI and agentic systems requires moving from traditional server health monitoring to stochastic system reliability: tracking token economics, prompt drift, retrieval quality, tool error rates, and 429 throttling spikes. This playbook establishes the site reliability engineering standards for production AI on AWS.",
+    "sections": [
+      {
+        "title": "1. The 10 Mandatory Operational Indicators",
+        "body": "Every production AI application on AWS must instrument and display the 10 core operational health metrics in [[cloudwatch]]:",
+        "bullets": [
+          "**1. Task Throughput & Completion Rate (Target: >95%):** End-to-end completed business tasks versus aborted or failed runs.",
+          "**2. Time to First Token (TTFT) (Target: P95 <1,500ms):** Elapsed time from prompt submission to first streamed completion token.",
+          "**3. Token Consumption & Cache Efficiency (Target: >35% cache hits):** Prompt and completion token volume, tracking prompt caching savings on Bedrock.",
+          "**4. Model Throttling Rate (HTTP 429) (Target: <0.1%):** Frequency of ThrottlingException errors from model APIs.",
+          "**5. Retrieval Groundedness Score (Target: >95%):** Automated sample evaluation verifying answers cite retrieved context.",
+          "**6. Agent Tool-Call Failure Rate (Target: <2%):** Percentage of tool invocations resulting in errors, timeouts, or retries.",
+          "**7. Cost per Successful Task (Target: within budget):** Unit economics dividing daily total infrastructure spend by successful tasks.",
+          "**8. Evaluation Score Trend:** Offline and online golden eval scores tracked across releases.",
+          "**9. Guardrail Trigger Rate (Target: <0.1%):** Frequency of requests blocked by Bedrock Guardrails.",
+          "**10. Dependency Health & Availability (Target: >99.9%):** Health of upstream foundation models, OpenSearch Serverless, and DynamoDB."
+        ]
+      },
+      {
+        "title": "2. Mitigating HTTP 429 Throttling & Capacity Spikes",
+        "body": "Rate limiting is the most common operational failure mode in LLM applications. Implement multi-layered capacity resilience:",
+        "bullets": [
+          "**Cross-Region Inference Profiles:** Use [[bedrock]] Cross-Region Inference Profiles to automatically distribute requests across multiple AWS Regions during regional traffic bursts.",
+          "**Client Exponential Backoff and Jitter:** Configure AWS SDKs with full jitter exponential backoff to prevent thundering herd retry storms.",
+          "**Multi-Model Failover:** Configure [[apigw]] to failover to a fallback model (e.g. Anthropic Claude 3.5 Haiku or Amazon Nova Lite) if primary model capacity is exhausted.",
+          "**Asynchronous Queue Buffering:** Buffer non-interactive requests (document summarization, bulk categorization) through [[sqs]] to decouple user traffic from model concurrency limits."
+        ]
+      },
+      {
+        "title": "3. Managing Non-Deterministic Failure & Incident Response",
+        "body": "When generative AI applications fail, standard stack traces rarely reveal the root cause. Follow SRE triage procedures:",
+        "tips": [
+          "**Isolate the Failing Layer:** Determine whether the incident stems from Retrieval (empty or stale passages), Grounding (model hallucinating despite context), or Tool Invocation (API error or invalid schema).",
+          "**Prompt Circuit Breakers:** Maintain dynamic prompt versioning in AWS AppConfig or Parameter Store so prompts can be reverted in 60 seconds without code deployments.",
+          "**Stochastic Postmortems:** Conduct post-incident reviews using the 5 Whys adapted for AI: investigate dataset distribution shifts, prompt drift, and retrieval recall failure."
+        ]
+      }
+    ],
+    "see": [
+      "arch:llm-serving",
+      "dec:capacity-strategy",
+      "dec:inference-pattern",
+      "dec:cost-levers",
+      "svc:cloudwatch",
+      "svc:bedrock",
+      "svc:apigw"
+    ]
+  }
+];

@@ -1,85 +1,111 @@
-# AWS for AI/ML Systems — an interactive atlas
+# AWS AI Atlas — The AI Engineering Management Operating System
 
-**Live site: https://sadiqgpasha89.github.io/aws-ai-atlas/**
+A static, zero-dependency, client-side web application designed for AI Engineering Managers, Principal Architects, and Staff Engineers delivering enterprise generative AI and multi-agent systems on Amazon Web Services (AWS).
 
-A static, no-build website that explains the AWS services you use to build AI and ML systems: what each one is, how it works step by step (with an animated stepper), the gotchas and edge cases, and how to use it in larger systems.
+Live site: [https://sadiqgpasha89.github.io/aws-ai-atlas/](https://sadiqgpasha89.github.io/aws-ai-atlas/)
 
-- **69 services** in **11 categories**: Compute & Accelerators, Storage, Databases & Vector Stores, Data & Analytics, Streaming & Orchestration, Generative AI, ML Platform (SageMaker), Pre-built AI Services, Networking & Delivery, Security & Identity, Observability & Operations.
-- **6 reference architectures** (RAG assistant, self-hosted LLM serving, MLOps, agent platform, document intelligence, real-time features), each a step-through diagram whose boxes link to the service pages.
-- **Leader toolkit** for engineering managers and principal engineers building agentic and ML systems:
-  - **14 decision guides** (build/buy/customise, autonomy level, how to improve a model, where the model runs, agent hosting, vector store, inference pattern, capacity, orchestration, training compute, evaluation, human-in-the-loop, cost levers, tenancy). Each has an options table, if/then rules, red flags, design-review questions, a revisit trigger and a one-way/two-way-door marker.
-  - **Solution shaper**: seven questions in, a starting stack, risks and the decisions to make next out (copyable as markdown).
-  - **Readiness checklists**: a prototype-to-scale maturity ladder, a 38-item production-readiness checklist (progress saved in the browser) and a decision-record template.
-  - **Cost-per-task calculator** with a what-if table for caching, batching, routing and fewer calls.
-- Search (`/` or `Ctrl/Cmd+K`), light and dark themes, keyboard-friendly steppers, responsive layout.
+---
 
-Pure HTML, CSS and JavaScript. No framework, no bundler, no dependencies.
+## The 8 Pillars of the AI Engineering Operating System
 
-## Run it locally
+The Atlas is structured around eight foundational operational pillars that span the entire lifecycle of enterprise AI delivery:
 
-```bash
-python3 -m http.server 8000
-# open http://localhost:8000
-```
+### 1. AWS Services Catalogue (69 Services across 11 Categories)
+Comprehensive coverage of the core AWS AI/ML ecosystem across compute, storage, databases, analytics, streaming, generative AI, ML platform, AI services, networking, security, and observability.
+- Each service contains: what it is, interactive animated isometric workflow, step-by-step technical execution, production gotchas, edge cases, agent & ML integration patterns, architecture pairings, and cost model notes.
+- Covers key AWS services: **Amazon Bedrock**, **Bedrock Knowledge Bases**, **Bedrock Agents**, **Bedrock Guardrails**, **AgentCore**, **Amazon OpenSearch Serverless**, **Amazon Textract**, **Amazon SageMaker (Training, Inference, Pipelines, Clarify, Feature Store)**, **AWS Lambda**, **AWS Step Functions**, **Amazon DynamoDB**, **Amazon Neptune**, **AWS PrivateLink**, and **Amazon CloudWatch**.
 
-## Publish on GitHub Pages
+### 2. Architecture Reference Library (13 Reference Architectures)
+End-to-end interactive blueprints for production AI systems with step-through packet animations:
+1. **Traditional RAG**: Ingestion, document cracking, chunking, embeddings, hybrid search (BM25 + vector), Reciprocal Rank Fusion (RRF), semantic reranking, grounded generation.
+2. **Agentic RAG**: Multi-query decomposition, parallel retrieval tools, iterative reflection, reranking, and answer synthesis via Bedrock Agents and DynamoDB.
+3. **GraphRAG**: Knowledge graph construction, entity extraction, relationship triples, community summaries in Amazon Neptune, and graph-guided retrieval.
+4. **Multimodal RAG**: Textract layout extraction, table Markdown conversion, Rekognition visual bounds, and multimodal Claude/Nova embeddings.
+5. **Secure Multi-Tenant RAG**: IAM / Cognito identity propagation, document-level security trimming (ACLs), tenant isolation, and PrivateLink VPC endpoint routing.
+6. **Multi-Agent Orchestration**: Bedrock Agents & AgentCore implementing sequential, supervisor, handoff, and group-chat patterns with state persistence in DynamoDB.
+7. **GenAIOps & MLOps Lifecycle**: 8-stage operational pipeline: prompt versioning in Git, automated evaluation gates via SageMaker Clarify and Bedrock Evals, canary releases, and CloudWatch online telemetry.
+8. **RAG on Bedrock & OpenSearch**: Classic pattern connecting API Gateway, OpenSearch Serverless, and Bedrock.
+9. **High-Throughput LLM Serving on EKS**: vLLM on EKS GPU instances with autoscaling and load balancing.
+10. **Enterprise MLOps on SageMaker**: SageMaker Pipelines orchestrating distributed GPU compute, Model Registry, and managed endpoints.
+11. **Governed Agentic Workflows**: Bedrock Agents and Lambda tools with Step Functions state persistence.
+12. **Multimodal Document Processing**: Large-scale asynchronous document extraction into structured schemas.
+13. **Real-time Feature Store**: Low-latency feature store and streaming inference with DynamoDB and Kinesis.
 
-1. Create a new GitHub repository (for example `aws-ai-atlas`) and push this folder to its `main` branch.
-2. In the repository go to **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. Push to `main`. The workflow in `.github/workflows/pages.yml` validates the data and deploys. This repo's site appears at `https://sadiqgpasha89.github.io/aws-ai-atlas/` (for a fork or rename, it is `https://<your-user>.github.io/<repo>/`).
+### 3. Architecture Decision Centre (23 Decision Guides)
+Exhaustive decision guides across Strategy, Architecture, and Risk, marked with one-way and two-way door reversibility markers:
+- **Dedicated Role Lenses**:
+  - *Engineering Manager Lens*: Default call, what to decide, team operating rhythm, quick calls, budget implications, and evidence to ask for.
+  - *Principal Engineer Lens*: Default design, what to own, design trade-offs, quick calls, and evidence to demand in design reviews.
+- **Includes 9 Mission-Critical AI Decisions**:
+  - `vector-hybrid-search`: Vector vs Hybrid Search (OpenSearch BM25 + k-NN)
+  - `classic-vs-agentic-rag`: Classic vs Agentic RAG
+  - `search-vs-aurora`: OpenSearch Serverless vs Aurora PostgreSQL pgvector
+  - `chunking-strategy`: Fixed vs Semantic vs Hierarchical Chunking
+  - `reranking-tradeoff`: Semantic Reranking Quality vs Latency
+  - `graphrag-vs-vector`: GraphRAG vs Vector RAG (Neptune vs OpenSearch)
+  - `index-tenancy`: Shared vs Isolated Search Indexes
+  - `workflow-vs-agent`: Deterministic Workflows vs Autonomous Agents
+  - `model-deployment-capacity`: Bedrock On-Demand vs Provisioned Throughput vs Cross-Region Profiles
+- Plus interactive tools: **Solution Shaper**, **Readiness Checklists**, and **Cost-per-Task Calculator**.
 
-All asset paths are relative and routing uses the URL hash (`#/s/bedrock`), so it works under a project sub-path with no configuration.
+### 4. AI Engineering Playbooks (`#/p`)
+In-depth production playbooks providing technical guidelines, measurable metrics, and engineering rules:
+1. **RAG Engineering Playbook**: Document cracking via Textract layout analysis, layout-aware Markdown chunking, hybrid search tuning (RRF), semantic cross-encoder reranking, and measurable quality indicators (Recall@K, MRR, NDCG, Groundedness, Answer Relevance, Citation Quality).
+2. **Multi-Agent Engineering Playbook**: Three orchestration patterns (Supervisor-Worker, Sequential Pipeline, Hierarchical Consensus), runtime comparisons (Bedrock Agents vs AgentCore vs Step Functions), memory lifecycles, and tool authorization.
+3. **GenAIOps & Production MLOps Playbook**: 8-stage lifecycle, prompt versioning in Git, automated PR evaluation gates via SageMaker Clarify and Bedrock Evaluations, canary releases, and model drift monitoring.
+4. **Enterprise AI Security & Hardening Playbook**: Identity delegation, document security trimming, Bedrock Guardrails prompt shields, PrivateLink VPC isolation, and egress filtering.
+5. **Performance, Reliability & SRE Playbook**: Latency budgets (TTFT < 1.5s), token economics (prompt caching, cross-region inference profiles, batch inference), 429 throttling mitigation, and capacity planning.
 
-## Project layout
+### 5. Enterprise Security & Governance (`#/gov`)
+Architecture frameworks aligning AWS AI workloads with corporate enterprise standards:
+- **AWS Well-Architected Framework for AI & Control Tower Landing Zones**: Multi-account organization hierarchy, separating platform shared services accounts from decentralized workload accounts.
+- **Zero-Trust Network Topology**: Hub-and-spoke with AWS Transit Gateway, AWS Network Firewall, PrivateLink VPC Endpoints for all PaaS services, and route table egress filtering.
+- **8-Pillar Security Framework**: Identity, Authorization, Data Protection, Network Isolation, Prompt Defense, Agent Boundaries, Model & IP Protection, and Continuous Red Teaming.
+- **Tenancy Architecture Models**: Pooled/Shared Index vs Index-per-Tenant vs Collection-per-Tenant evaluation.
+- **Recommended Service Control Policies (SCPs) & Config Rules**: Programmatic guardrails enforcing private networking, CMK encryption, approved model catalogs, and CloudTrail audit logging.
 
-```
-index.html              page shell, loads the data files then app.js
-assets/style.css        design tokens, layout, components, dark theme
-assets/app.js           router, pages, isometric diagrams, stepper, search
-data/core.js            category definitions + the S() helper
-data/<category>.js      one file of services per category
-data/architectures.js   reference architectures
-data/decisions.js       decision guides (options, rules, red flags, review questions)
-data/playbooks.js       maturity ladder, readiness checklist, ADR template, solution shaper rules
-scripts/check.mjs       data validator (runs in CI)
-```
+### 6. Production Operations Centre (`#/ops`)
+Telemetry, incident management, and SRE runbooks for stochastic AI systems:
+- **Mandatory 10-Widget Operations Dashboard**: Real-time widgets tracking Task Throughput, Time to First Token (TTFT), Token Consumption, HTTP 429 Throttling, RAG Groundedness, Tool Failure Rate, Unit Cost per Task, Evaluation Trends, Guardrail Triggers, and Dependency Availability.
+- **Ready-to-Run CloudWatch Queries**: Expandable CloudWatch Logs Insights queries with copy buttons for direct deployment to CloudWatch dashboards.
+- **Production SRE Runbooks**: Actionable remediation procedures for 429 throttling outages, Groundedness regressions, agent infinite loops, and model deprecation upgrades.
+- **AI Incident Postmortem Template**: Specialized postmortem template with AI-specific 5 Whys and probabilistic failure classification.
 
-## Add or edit a service
+### 7. AI Engineering Manager Toolkit (`#/toolkit`)
+Leadership artifacts, frameworks, and copyable templates:
+- **AI Use-Case Assessment Matrix**: Value vs Feasibility scoring framework across 8 dimensions.
+- **AI Project Estimation Framework**: 4-phase headcount allocation model (Discovery, Architecture Spike, Hardening, Launch Readiness).
+- **AI Team RACI Matrix**: Clear role ownership across EM, PE, AI Engineer, MLOps, Security, Product, and Business Stakeholders.
+- **AI RAID Tracker**: Core enterprise risks, assumptions, issues, and dependencies with mitigation strategies.
+- **Production Quality Gates**: Formal exit criteria across Prototype, Pilot, Production, and Scale.
+- **Model Assessment Matrix**: Comparison across Anthropic Claude 3.5 Sonnet/Haiku, Amazon Nova Pro/Lite/Micro, and open-weight models.
+- **Team Skills Matrix**: Key competency areas and leveling targets.
+- **Copyable Architecture Review Template**: Markdown questionnaire for design reviews.
+- **Copyable Executive AI Status Report**: Structured one-page monthly report template.
 
-Add an `S({...})` call to the relevant file in `data/`:
+### 8. Hands-on Labs & Learning Roadmaps (`#/labs`)
+Curated progressive paths and implementation labs:
+- **Role-Based Roadmaps**: 4-week AI Engineering Manager curriculum, 6-week Principal AI Architect curriculum, and 4-week Production AI Engineer curriculum.
+- **5 Hands-on Implementation Labs**:
+  1. *End-to-End Enterprise RAG with Bedrock Knowledge Bases & OpenSearch Serverless*
+  2. *Building Autonomous Multi-Agent Workflows with Bedrock Agents & Lambda*
+  3. *Document-Level Security Trimming with Cognito Claims*
+  4. *GenAIOps: Automated PR Evaluation Pipeline with GitHub Actions*
+  5. *Resilient AI Gateway with API Gateway & Cross-Region Failover*
+- **Official AWS Architecture Resources**: Direct curated links to official AWS documentation, whitepapers, and guides.
 
-```js
-S({
-  id: 'my-service',            // url slug, [a-z0-9-]
-  cat: 'compute',              // a category id from data/core.js
-  name: 'Display Name',
-  doc: 'service/',             // path under docs.aws.amazon.com
-  tag: 'One-line summary.',
-  what: 'Paragraph one.\n\nParagraph two.',
-  flow: ['Node A', 'Node B', 'Node C'],              // 3–7 labels for the diagram
-  steps: [[0, 'What happens at A.'], [1, '...'], [2, '...']],  // [nodeIndex, text]
-  gotchas: ['...'], edges: ['...'], ml: ['...'],
-  pairs: ['other-service-id'],
-  cost: 'How it is billed.'
-});
-```
+---
 
-Text supports `` `code` ``, `**bold**`, and links to other services with `[[service-id]]` or `[[service-id|custom label]]`.
+## Local Development & Validation
 
-Then run the validator:
+Validate data structures and cross-references:
 
 ```bash
 node scripts/check.mjs
 ```
 
-It checks for unknown references, step indexes outside the diagram, nodes no step ever visits, unbalanced markup, and missing fields.
+Serve locally:
 
-## Add or edit a decision guide
-
-Append an object to `ATLAS.decisions` in `data/decisions.js` (fields are listed at the top of that file). Table cells can link services with `[[service-id|label]]`. `node scripts/check.mjs` checks the schema, every link, and runs the solution shaper over all 5,832 answer combinations to make sure each recommendation points at real services and guides. If you change the shaper rules in `data/playbooks.js`, run it again.
-
-## A note on accuracy
-
-AWS limits, quotas, prices, and service names change often. Numbers in this atlas are for orientation. Before designing around a specific limit, check the linked AWS documentation and your account's Service Quotas. Corrections are welcome.
-
-This is an independent educational project and is not affiliated with or endorsed by Amazon Web Services.
+```bash
+python3 -m http.server 8000
+```
