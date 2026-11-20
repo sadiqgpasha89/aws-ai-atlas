@@ -263,6 +263,17 @@ Ensure zero syntax errors across the core application codebase:
 node --check assets/app.js
 ```
 
+### Run everything
+
+```bash
+npm run check    # data validation + syntax checks
+npm test         # unit tests (workspace logic, search, site rules)
+npm run smoke    # browser smoke test over every route (needs Playwright; see docs/testing/testing.md)
+npm run verify   # all three
+```
+
+`assets/app.js` is generated: edit `scripts/build_app.mjs` and run `node scripts/build_app.mjs`. See `CHANGELOG.md` for what changed and why.
+
 ### Run Locally
 Start a lightweight local server:
 

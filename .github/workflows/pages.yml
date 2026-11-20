@@ -31,6 +31,8 @@ jobs:
       - name: Syntax-check app and workspace modules
         run: |
           node --check assets/app.js
+          node --check assets/search.js
+          node --check assets/theme.js
           for f in assets/lib/*.js assets/ui/*.js data/demo.js; do node --check "$f"; done
       - name: Unit tests
         run: node --test tests/*.test.mjs
