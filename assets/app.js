@@ -1725,7 +1725,7 @@
     var cur = kind === 's' && byId[id] ? byId[id].cat : (kind === 'c' ? id : null);
     var curTheme = kind === 'd' && decById[id] ? decById[id].theme : null;
 
-    var h = '<h3>Command & Operations</h3>' +
+    var h = (A.sidebarExtra ? A.sidebarExtra(kind, id) : '') + '<h3>Command & Operations</h3>' +
       nl('#/', 'Command Centre', !kind || kind === 'command') +
       nl('#/delivery', 'AI Project Lifecycle (12)', kind === 'delivery') +
       nl('#/arch-review', 'Architecture Review Board', kind === 'arch-review') +
@@ -1773,13 +1773,24 @@
   /* ==========================================================================
      ROUTER & SEARCH
      ========================================================================== */
+  /* Extension points for the workspace modules (assets/ui/*.js): they register A.routes, A.sidebarExtra and A.searchEntries. */
+  A.legacy = { pageCommandCentre: pageCommandCentre, notFound: notFound };
+  A.rerender = function () { render(); };
   function render() {
     $$('.stepper').forEach(function (el) { if (el._stop) el._stop(); });
-    var parts = location.hash.replace(/^#\/?/, '').split('/'), kind = parts[0] || '', id = parts[1] || '';
+    var rawHash = location.hash.replace(/^#\/?/, ''), qpos = rawHash.indexOf('?');
+    var query = qpos > -1 ? rawHash.slice(qpos + 1) : '';
+    var parts = (qpos > -1 ? rawHash.slice(0, qpos) : rawHash).split('/'), kind = parts[0] || '', id = parts[1] || '';
     pendingSteppers = []; afterRender = null;
     var html, title = 'AWS AI Atlas — AI Engineering Management Operating System';
 
-    if (kind === '' || kind === 'command') {
+    var ext = A.routes && A.routes[kind || 'command'];
+    if (ext) {
+      var out = ext.render(parts.slice(1), query);
+      html = out.html; title = out.title || title;
+      if (out.mount) afterRender = function () { out.mount($('#main')); };
+    }
+    else if (kind === '' || kind === 'command') {
       html = pageCommandCentre();
       title = 'AI Engineering Manager Command Centre — AWS AI Atlas';
     }
@@ -1898,7 +1909,7 @@
     return { type: 'Playbook', href: '#/p/' + p.id, name: p.title, id: p.id, tag: p.tag, cat: 'Playbook',
       hay: (p.title + ' ' + p.tag + ' ' + p.intro + ' ' + p.sections.map(function (s) { return s.title + ' ' + (s.body || '') + ' ' + (s.bullets ? s.bullets.join(' ') : ''); }).join(' ')).toLowerCase() };
   })).concat(A.toolkit.templates.map(function (t) {
-    return { type: 'Template', href: '#/toolkit', name: t.title, id: t.id, tag: t.description, cat: 'Manager Template (' + t.category + ')', hay: (t.title + ' ' + t.category + ' ' + t.description).toLowerCase() };
+    return { type: 'Template', href: '#/toolkit', name: t.title, id: t.id, tag: t.description, cat: 'Manager Template', hay: (t.title + ' ' + t.description).toLowerCase() };
   })).concat(A.selector.workloads.map(function (w) {
     return { type: 'Selector', href: '#/selector', name: w.title, id: w.id, tag: w.keyDecision, cat: 'Service Selector (' + w.workloadProfile + ')', hay: (w.title + ' ' + w.workloadProfile + ' ' + w.keyDecision + ' ' + w.recommended.service).toLowerCase() };
   })).concat(A.models.registry.map(function (m) {
@@ -1922,7 +1933,7 @@
   function closeSearch() { overlay.hidden = true; }
   function runSearch() {
     var terms = q.value.toLowerCase().split(/\s+/).filter(Boolean);
-    hits = index.map(function (it) {
+    hits = index.concat(A.searchEntries ? A.searchEntries() : []).map(function (it) {
       var score = 0, ok = true;
       terms.forEach(function (t) {
         var nm = it.name.toLowerCase(), s = 0;

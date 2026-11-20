@@ -288,6 +288,16 @@ for (const c of A.categories) {
   checkText(`category ${c.id}.lens`, c.lens);
 }
 
+// Every script referenced by index.html must exist, and the workspace libraries/UI must be loaded before app.js.
+const allScripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
+for (const s of allScripts) if (!fs.existsSync(path.join(root, s))) err(`index.html references missing script ${s}`);
+const appAt = allScripts.indexOf('assets/app.js');
+for (const f of fs.readdirSync(path.join(root, 'assets/lib')).concat(fs.readdirSync(path.join(root, 'assets/ui')).map(x => 'ui/' + x))) {
+  const rel = f.startsWith('ui/') ? 'assets/' + f : 'assets/lib/' + f;
+  const at = allScripts.indexOf(rel);
+  if (at < 0) err(`${rel} is not loaded by index.html`); else if (at > appAt) err(`${rel} must load before assets/app.js`);
+}
+
 const words = A.services.reduce((n, s) => n + JSON.stringify(s).split(/\s+/).length, 0);
 console.log(`${A.categories.length} categories, ${A.services.length} services, ${A.architectures.length} architectures, ${A.decisions.length} decision guides (+ em/pe role tabs), ${A.readiness.reduce((n, g) => n + g.items.length, 0)} readiness items, ${combos} shaper combinations checked, ~${words} words in services`);
 if (errs.length) { console.error(`\n${errs.length} problem(s):`); errs.forEach(e => console.error(' - ' + e)); process.exit(1); }

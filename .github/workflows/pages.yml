@@ -24,8 +24,16 @@ jobs:
           node-version: 22
       - name: Validate service data
         run: node scripts/check.mjs
-      - name: Syntax-check app
-        run: node --check assets/app.js
+      - name: Check assets/app.js is generated from scripts/build_app.mjs
+        run: |
+          node scripts/build_app.mjs
+          git diff --exit-code -- assets/app.js || { echo "assets/app.js is out of date. Run: node scripts/build_app.mjs"; exit 1; }
+      - name: Syntax-check app and workspace modules
+        run: |
+          node --check assets/app.js
+          for f in assets/lib/*.js assets/ui/*.js data/demo.js; do node --check "$f"; done
+      - name: Unit tests
+        run: node --test tests/*.test.mjs
 
   deploy:
     needs: validate

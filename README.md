@@ -45,15 +45,42 @@ Built with a zero-dependency, vanilla JavaScript single-page architecture that r
 
 ---
 
+## 🧰 My workspace (V2)
+
+A local-first management layer added on top of the reference content. Data stays in your browser; there is no backend.
+
+| Page | Route | What it does |
+|---|---|---|
+| Dashboard | `#/command` | KPIs, attention list, delivery, risks, actions, entered cost; filters; Markdown/CSV/print export |
+| Initiatives | `#/portfolio` | Portfolio list, lifecycle stages (Idea to Scale, Sunset/Rejected) with history, milestones, cost/benefit entries |
+| Prioritisation | `#/portfolio/prioritise` | Editable-weight scoring, sensitivity, rank stability, value-vs-feasibility matrix, compare two |
+| Registers | `#/registers/risks`, `/decisions`, `/actions` | Risk register (probability × impact), decision log, action tracker |
+| Calculators | `#/calc/llm` and others | LLM, RAG, agent, model comparison, budget, capacity, unit economics, optimisation, ROI/payback; saved scenarios |
+| Workspace | `#/workspace` | Sample/personal mode, JSON export, validated import with preview, delete |
+
+Principles: prices and volumes are always typed by you (examples are labelled); nothing is fetched live; status uses text plus a symbol, not colour alone; do not enter secrets or personal data.
+
+What is and is not implemented from the V2 plan is listed honestly in [`docs/implementation/status.md`](docs/implementation/status.md). Privacy details: [`docs/privacy/privacy.md`](docs/privacy/privacy.md). Testing: [`docs/testing/testing.md`](docs/testing/testing.md).
+
+### Development
+
+```sh
+node scripts/build_app.mjs        # regenerate assets/app.js (do not edit it by hand)
+node scripts/check.mjs            # validate content data and script wiring
+node --test tests/*.test.mjs      # unit tests
+python3 -m http.server            # then open http://localhost:8000/
+```
+
+New workspace code lives in `assets/lib/` (pure logic, unit tested) and `assets/ui/` (pages), registered through `window.ATLAS.routes`.
+
+---
+
 ## 🗂️ The 12 Operational Workspaces
 
 ### 1. AI Engineering Manager Command Centre (`#/` & `#/command`)
-The operational cockpit for daily engineering management:
-- **Executive Portfolio KPIs**: Total active AI initiatives (12), projects requiring immediate attention (3 at risk), production deployments (7), and real-time monthly cloud run-rate (₹8.4L).
-- **"My Attention Today" Priority Feed**: High-severity blocker tracking, including VPC endpoint quota saturation, Groundedness regression alerts, EU AI Act compliance audits, and Bedrock Provisioned Throughput commitment renewals.
-- **Today's Management Decisions**: Context, evaluated options, and explicit recommendations for pressing trade-offs (e.g., Cross-Region Inference Profiles vs Provisioned Throughput, OpenSearch Serverless vs Aurora pgvector).
-- **Daily Operating Rhythm**: Hour-by-hour workflow schedule from 09:00 standup triage to 17:00 postmortem reviews.
-- **Production AI Health Matrix**: Live status indicators for P95 latency (1,180ms), RAG groundedness (0.912), daily token volume (42.8M), guardrail intercept rate (1.42%), and tool error rates (0.48%).
+A dashboard built **only** from the records you enter in your own workspace (see "My workspace" below). It shows active initiatives, items at risk or blocked, overdue milestones, open critical/high risks, overdue actions, pending decisions and entered cost estimates. Every number links to the records behind it. It never reads AWS, CloudWatch or any live system, and shows no figure you did not enter. An empty workspace shows a guided empty state; **Explore with sample data** loads clearly labelled fictional records.
+
+The original static page, whose figures were illustrative and hand-written, is kept at `#/command/sample` behind an "ILLUSTRATIVE STATIC CONTENT" banner.
 
 ### 2. AI Delivery Lifecycle Centre (`#/delivery`)
 A standardized 12-stage delivery lifecycle operating system for enterprise AI:
