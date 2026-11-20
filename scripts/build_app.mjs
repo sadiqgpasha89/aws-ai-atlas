@@ -673,6 +673,18 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
   /* ==========================================================================
      PAGE 7: MODEL PORTFOLIO & LIFECYCLE MANAGEMENT (#/models)
      ========================================================================== */
+  var CHECK_LABEL = { 'lifecycle-notice': 'Lifecycle notice', 'price-confirmed': 'Price confirmed', 'price-differs': 'Price differs', 'unconfirmed': 'Not confirmed', 'example-only': 'Example only' };
+  function checkCounts(reg) {
+    var n = {}; reg.forEach(function (m) { n[m.check.result] = (n[m.check.result] || 0) + 1; });
+    return (n['lifecycle-notice'] || 0) + ' with an AWS lifecycle notice, ' + (n['price-confirmed'] || 0) + ' price(s) confirmed, ' + (n['price-differs'] || 0) + ' price that differs, ' + ((n.unconfirmed || 0) + (n['example-only'] || 0)) + ' not confirmed or example only.';
+  }
+  function checkCell(m, today) {
+    var c = m.check, cls = 'muted', sym = '•', extra = '';
+    if (c.result === 'lifecycle-notice') { var past = c.eolDate && c.eolDate < today; cls = past ? 'bad' : 'warn'; sym = past ? '✖' : '▲'; extra = c.eolDate ? ' · EOL ' + esc(c.eolDate) + (past ? ' (passed in the listed Regions)' : '') : ''; }
+    else if (c.result === 'price-confirmed') { cls = 'ok'; sym = '✓'; }
+    else if (c.result === 'price-differs') { cls = 'warn'; sym = '▲'; }
+    return '<span class="wbadge ' + cls + '"><span aria-hidden="true">' + sym + '</span> ' + esc(CHECK_LABEL[c.result]) + extra + '</span><br><small>' + esc(c.note) + ' <a href="' + esc(c.source) + '" target="_blank" rel="noopener noreferrer">Source ↗</a> · checked ' + esc(c.on) + '</small>';
+  }
   function pageModels() {
     var md = A.models;
     var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Model Portfolio</div>' +
@@ -681,7 +693,7 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
 
     var pv = md.provenance;
     h += '<section class="wsec" aria-labelledby="mdl-prov"><h2 id="mdl-prov">Where these numbers come from</h2><ul>' +
-      '<li><b>Published specs and prices</b> (model id, context window, input and output price) are hand-entered. Last verified: <b>' + (pv.verifiedOn ? esc(pv.verifiedOn) : 'not recorded') + '</b>. Check them at ' +
+      '<li><b>Published specs and prices</b> (model id, context window, input and output price) are hand-entered. Fully verified: <b>' + (pv.verifiedOn ? esc(pv.verifiedOn) : 'no') + '</b>. Partial check on <b>' + esc(pv.lastCheckedOn) + '</b>: ' + checkCounts(md.registry) + ' ' + esc(pv.checkMethod) + ' Check them at ' +
       pv.sources.map(function (x) { return '<a href="' + esc(x.url) + '" target="_blank" rel="noopener noreferrer">' + esc(x.label) + ' ↗</a>'; }).join(' and ') + '.</li>' +
       '<li><b>Example governance fields</b> (' + pv.illustrativeFields.map(esc).join(', ') + ') describe a hypothetical organisation. They are not measurements, benchmarks or AWS data. Columns that show them are marked <span class="wbadge muted">example</span>.</li></ul></section>';
 
@@ -700,7 +712,7 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
     // Model Registry Table
     h += '<h2>Active Model Portfolio Registry (' + md.registry.length + ' Models)</h2>' +
       '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
-        '<th>Model Name & ID</th><th>Provider</th><th>Category</th><th>Status <span class="wbadge muted">example</span></th><th>P50 / P95 Latency <span class="wbadge muted">example</span></th><th>Cost (Input / Output 1M)</th><th>Context</th><th>Tools / Multi</th><th>Approved Data <span class="wbadge muted">example</span></th><th>Owner Squad <span class="wbadge muted">example</span></th>' +
+        '<th>Model Name & ID</th><th>Provider</th><th>Category</th><th>Status <span class="wbadge muted">example</span></th><th>P50 / P95 Latency <span class="wbadge muted">example</span></th><th>Cost (Input / Output 1M)</th><th>Context</th><th>Tools / Multi</th><th>Approved Data <span class="wbadge muted">example</span></th><th>Owner Squad <span class="wbadge muted">example</span></th><th>AWS check</th>' +
       '</tr></thead><tbody>';
 
     md.registry.forEach(function (m) {
@@ -716,6 +728,7 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
         '<td><small>' + (m.toolCalling ? 'Tools ✓' : 'No tools') + (m.multimodal ? ' · Vision ✓' : '') + '</small></td>' +
         '<td><small>' + (m.dataClassApproved || []).join(', ') + '</small></td>' +
         '<td><small>' + esc(m.ownerTeam) + '</small></td>' +
+        '<td>' + checkCell(m, new Date().toISOString().slice(0, 10)) + '</td>' +
       '</tr>';
     });
     h += '</tbody></table></div>';

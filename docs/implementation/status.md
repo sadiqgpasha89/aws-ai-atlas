@@ -26,13 +26,15 @@ Done in this iteration: Phase 0 (foundations) and the Phase 1 management core (p
 | Unit tests (61) and CI gate | Done | `tests/`, `.github/workflows/pages.yml` |
 | Honest content status: removed the unsubstantiated "AWS Verified 2026" badges, added a notice on every reference page and a `#/about/content` page; `check.mjs` fails if a "Verified <year>" claim reappears | Done | `assets/ui/content.js`, `scripts/check.mjs` |
 | Model registry provenance: sources, "last verified: not recorded", and an "example" mark on columns that describe a hypothetical organisation; `check.mjs` validates the provenance block | Done | `data/models.js`, `scripts/check.mjs` |
+| Model registry partial verification (2026-11-20): each model has a `check` result with source and note. 4 models carry AWS lifecycle notices (3 past their end-of-life date in the listed Regions), 2 prices confirmed, 1 price differs, 9 not confirmed or example only | Done, partial | `data/models.js`, `scripts/check.mjs` |
 | Accessibility basics (labels, keyboard, text+symbol status, live regions) | Done, checked by script and by hand on the main pages | see `docs/testing/testing.md` |
 
 ## Not done
 
 These parts of the plan were **not** implemented and should not be assumed to exist:
 
-- Per-claim source and verification metadata (`sources`, `lastVerified`, confidence) on the existing technical content (services, architectures, decisions, models). Pages now say plainly that figures are unverified, but nothing has been re-verified and no verification dates are recorded.
+- Full verification of the model registry. Only the legacy/end-of-life page was readable; the Bedrock pricing page's collapsed tables could not be read by the fetch tool, so 9 of 16 models have no confirmed price. The fetch tool summarises page text, so important dates should be rechecked with `aws bedrock get-foundation-model` (`modelLifecycle`) in your Region. Models newer than those in the registry (for example the current Claude and Nova generations) are not in it.
+- Per-claim source and verification metadata (`sources`, `lastVerified`, confidence) on the existing technical content (services, architectures, decisions). Models now have partial checks. Pages now say plainly that figures are unverified, but nothing has been re-verified and no verification dates are recorded.
 - Model registry and evaluation tracking as editable records; evaluation run results; production health or SLO data entry.
 - Team capacity and skills records; hiring or staffing planning.
 - Stakeholder, governance/compliance and audit-evidence records; incident and postmortem records.

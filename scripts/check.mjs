@@ -306,6 +306,18 @@ for (const f of fs.readdirSync(path.join(root, 'assets/lib')).concat(fs.readdirS
     if (pv.verifiedOn !== null && !/^\d{4}-\d{2}-\d{2}$/.test(pv.verifiedOn)) err('models.provenance.verifiedOn must be null or YYYY-MM-DD');
     if (!Array.isArray(pv.sources) || !pv.sources.length) err('models.provenance.sources must list at least one source');
     for (const x of pv.sources || []) if (!/^https:\/\/(docs\.aws\.amazon\.com|aws\.amazon\.com)\//.test(x.url || '') || !x.label) err(`models.provenance source needs a label and an https AWS url: ${JSON.stringify(x)}`);
+    if (pv.lastCheckedOn !== null && !/^\d{4}-\d{2}-\d{2}$/.test(pv.lastCheckedOn || '')) err('models.provenance.lastCheckedOn must be null or YYYY-MM-DD');
+    if (pv.verifiedOn !== null && A.models.registry.some(m => m.check?.result !== 'price-confirmed')) err('models.provenance.verifiedOn is set but not every model has a confirmed check');
+    const RES = ['lifecycle-notice', 'price-confirmed', 'price-differs', 'unconfirmed', 'example-only'];
+    for (const m of A.models.registry) {
+      const c = m.check, w = `model ${m.id}.check`;
+      if (!c) { err(`${w} is missing`); continue; }
+      if (!RES.includes(c.result)) err(`${w}.result must be one of ${RES.join(', ')}`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(c.on || '')) err(`${w}.on must be YYYY-MM-DD`);
+      if (!/^https:\/\/(docs\.aws\.amazon\.com|aws\.amazon\.com)\//.test(c.source || '')) err(`${w}.source must be an https AWS url`);
+      if (typeof c.note !== 'string' || c.note.length < 20) err(`${w}.note must explain the result`);
+      if (c.result === 'lifecycle-notice' && !/^\d{4}-\d{2}-\d{2}$/.test(c.eolDate || '')) err(`${w}.eolDate is required for a lifecycle notice`);
+    }
     const keys = new Set(A.models.registry.flatMap(m => Object.keys(m)));
     for (const f of pv.illustrativeFields || []) if (!keys.has(f)) err(`models.provenance.illustrativeFields names unknown field ${f}`);
   }

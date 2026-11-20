@@ -6,9 +6,13 @@ window.ATLAS.models = {
   /* Provenance (see docs/content/README.md). verifiedOn stays null until someone checks the figures against the sources and records the date. */
   provenance: {
     verifiedOn: null,
+    /* verifiedOn stays null until every model is fully verified. lastCheckedOn is a partial check: see each row's check field. */
+    lastCheckedOn: '2026-11-20',
+    checkMethod: 'AWS pages were read with an automated fetch that summarises page text. The collapsed price tables on the Bedrock pricing page could not be read, so most prices are unconfirmed.',
     sources: [
       { label: 'Amazon Bedrock supported foundation models', url: 'https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html' },
-      { label: 'Amazon Bedrock pricing', url: 'https://aws.amazon.com/bedrock/pricing/' }
+      { label: 'Amazon Bedrock pricing', url: 'https://aws.amazon.com/bedrock/pricing/' },
+      { label: 'Amazon Bedrock legacy and end-of-life models', url: 'https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html' }
     ],
     /* Fields in each registry row that describe a hypothetical organisation, not published or measured facts. */
     illustrativeFields: ['status', 'qualityScore', 'latencyP50', 'latencyP95', 'dataClassApproved', 'evalBenchmark', 'ownerTeam', 'reviewDate']
@@ -16,6 +20,7 @@ window.ATLAS.models = {
   registry: [
     {
       id: 'claude-3-7-sonnet',
+      check: { on: '2026-11-20', result: 'lifecycle-notice', eolDate: '2026-11-13', source: 'https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html', note: 'AWS lists this model as Legacy from 2026-10-10 with end-of-life on 2026-11-13 in ap-south-1 and eu-west-2. Other Regions are not on that page. Price and context window not confirmed.' },
       name: 'Claude 3.7 Sonnet',
       provider: 'Anthropic (via AWS Bedrock)',
       category: 'Foundation LLM',
@@ -35,10 +40,11 @@ window.ATLAS.models = {
       evalBenchmark: 'SWE-bench Verified 70.3%, GPQA Diamond 65.1%, Agentic Planning 94.2%',
       ownerTeam: 'Core AI Platform Team',
       reviewDate: '2027-02-15',
-      notes: 'Supports prompt caching (5-min TTL cuts input token costs by 90%). Recommended default for complex agents.'
+      notes: 'Supports prompt caching (5-min TTL cuts input token costs by 90%). Example registry entry. AWS lists this model as Legacy with end-of-life on 2026-11-13 in some Regions, so do not choose it for new work.'
     },
     {
       id: 'claude-3-5-haiku',
+      check: { on: '2026-11-20', result: 'unconfirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'Not in the AWS legacy or end-of-life tables (that page does not list active models, so this is not proof it is active). Price and context window not confirmed.' },
       name: 'Claude 3.5 Haiku',
       provider: 'Anthropic (via AWS Bedrock)',
       category: 'Small Language Model (SLM)',
@@ -62,6 +68,7 @@ window.ATLAS.models = {
     },
     {
       id: 'amazon-nova-pro',
+      check: { on: '2026-11-20', result: 'unconfirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'The pricing page tables could not be read. Price and context window not confirmed.' },
       name: 'Amazon Nova Pro',
       provider: 'Amazon Web Services',
       category: 'Foundation LLM',
@@ -85,6 +92,7 @@ window.ATLAS.models = {
     },
     {
       id: 'amazon-nova-lite',
+      check: { on: '2026-11-20', result: 'unconfirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'The pricing page tables could not be read. Price and context window not confirmed.' },
       name: 'Amazon Nova Lite',
       provider: 'Amazon Web Services',
       category: 'Small Language Model (SLM)',
@@ -108,6 +116,7 @@ window.ATLAS.models = {
     },
     {
       id: 'amazon-nova-micro',
+      check: { on: '2026-11-20', result: 'unconfirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'The pricing page tables could not be read. Price and context window not confirmed.' },
       name: 'Amazon Nova Micro',
       provider: 'Amazon Web Services',
       category: 'Ultra-Fast SLM',
@@ -131,6 +140,7 @@ window.ATLAS.models = {
     },
     {
       id: 'llama-3-3-70b',
+      check: { on: '2026-11-20', result: 'lifecycle-notice', eolDate: '2027-03-30', source: 'https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html', note: 'AWS lists this model as Legacy from 2026-09-30 with end-of-life on 2027-03-30 in us-east-1, us-east-2 and us-west-2. Price not confirmed.' },
       name: 'Meta Llama 3.3 70B Instruct',
       provider: 'Meta (via AWS Bedrock)',
       category: 'Open-Weight LLM',
@@ -154,6 +164,7 @@ window.ATLAS.models = {
     },
     {
       id: 'titan-embed-v2',
+      check: { on: '2026-11-20', result: 'unconfirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'The pricing page tables could not be read. Price and token limit not confirmed.' },
       name: 'Amazon Titan Text Embeddings v2',
       provider: 'Amazon Web Services',
       category: 'Embedding Model',
@@ -177,6 +188,7 @@ window.ATLAS.models = {
     },
     {
       id: 'cohere-embed-v3',
+      check: { on: '2026-11-20', result: 'price-confirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'The pricing page lists "Cohere Embed English" at $0.0001 per 1,000 input tokens, which is $0.10 per 1M and matches. The page does not name the v3 version, and the token limit is not confirmed.' },
       name: 'Cohere Embed English / Multilingual v3',
       provider: 'Cohere (via AWS Bedrock)',
       category: 'Embedding Model',
@@ -200,6 +212,7 @@ window.ATLAS.models = {
     },
     {
       id: 'cohere-rerank-v3-5',
+      check: { on: '2026-11-20', result: 'price-confirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'The pricing page lists Cohere Rerank 3.5 at $2.00 per 1,000 queries, which matches. The token limit is not confirmed.' },
       name: 'Cohere Rerank v3.5',
       provider: 'Cohere (via AWS Bedrock)',
       category: 'Cross-Encoder Reranker',
@@ -223,6 +236,7 @@ window.ATLAS.models = {
     },
     {
       id: 'claude-3-haiku-legacy',
+      check: { on: '2026-11-20', result: 'lifecycle-notice', eolDate: '2026-09-10', source: 'https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html', note: 'AWS lists end-of-life on 2026-09-10 in Regions including us-east-1, us-east-2, us-west-2, eu-west-1 and eu-central-1, and on 2026-11-13 or 2026-11-27 in others. Price not confirmed.' },
       name: 'Claude 3 Haiku (Legacy)',
       provider: 'Anthropic (via AWS Bedrock)',
       category: 'Legacy LLM',
@@ -246,6 +260,7 @@ window.ATLAS.models = {
     },
     {
       id: 'custom-llama3-claims-lora',
+      check: { on: '2026-11-20', result: 'example-only', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'A hypothetical internal model hosted on SageMaker. It is not an AWS-published model, so there is nothing to check it against.' },
       name: 'Fine-Tuned Claims Adjudication Llama-3-8B',
       provider: 'Internal Squad Beta (Hosted on SageMaker)',
       category: 'Fine-Tuned LoRA Model',
@@ -269,6 +284,7 @@ window.ATLAS.models = {
     },
     {
       id: 'claude-3-5-sonnet',
+      check: { on: '2026-11-20', result: 'lifecycle-notice', eolDate: '2026-11-13', source: 'https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html', note: 'AWS lists this model as Legacy from 2026-10-10 with end-of-life on 2026-11-13 in ap-northeast-2, ap-south-1 and ap-southeast-1. Price not confirmed.' },
       name: 'Claude 3.5 Sonnet',
       provider: 'Anthropic (via AWS Bedrock)',
       category: 'Foundation LLM',
@@ -292,6 +308,7 @@ window.ATLAS.models = {
     },
     {
       id: 'claude-3-opus',
+      check: { on: '2026-11-20', result: 'unconfirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'Not in the AWS legacy or end-of-life tables (that page does not list active models, so this is not proof it is active). Price not confirmed.' },
       name: 'Claude 3 Opus',
       provider: 'Anthropic (via AWS Bedrock)',
       category: 'Frontier Reasoning LLM',
@@ -315,6 +332,7 @@ window.ATLAS.models = {
     },
     {
       id: 'mistral-large-2',
+      check: { on: '2026-11-20', result: 'price-differs', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'The pricing page lists "Mistral Large" at $0.008 input and $0.024 output per 1,000 tokens ($8 and $24 per 1M); this entry says $2 and $6. The page does not name the model version, so the difference is unresolved: check the 24.07 price.' },
       name: 'Mistral Large 2',
       provider: 'Mistral AI (via AWS Bedrock)',
       category: 'Foundation LLM',
@@ -338,6 +356,7 @@ window.ATLAS.models = {
     },
     {
       id: 'amazon-titan-text-express',
+      check: { on: '2026-11-20', result: 'unconfirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'Not in the AWS legacy or end-of-life tables. The pricing page tables could not be read. Price not confirmed.' },
       name: 'Amazon Titan Text Express',
       provider: 'Amazon Web Services',
       category: 'Legacy LLM',
@@ -361,6 +380,7 @@ window.ATLAS.models = {
     },
     {
       id: 'amazon-nova-premier',
+      check: { on: '2026-11-20', result: 'unconfirmed', eolDate: null, source: 'https://aws.amazon.com/bedrock/pricing/', note: 'The pricing page tables could not be read. Price and context window not confirmed.' },
       name: 'Amazon Nova Premier',
       provider: 'Amazon Web Services',
       category: 'Flagship Frontier LLM',
