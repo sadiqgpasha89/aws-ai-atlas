@@ -526,15 +526,15 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
     // Interactive ARB Risk Calculator
     h += '<h2>Interactive ARB Risk Calculator (Likelihood × Impact)</h2>' +
       '<div class="risk-calc-box">' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:16px">' +
           '<label class="num"><span class="nl2">Failure Likelihood</span>' +
             '<select id="riskLikelihood" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line2);background:var(--paper);font:inherit">' +
-              ar.riskCalculator.likelihoodLevels.map(function (l) { return '<option value="' + l.level + '">' + l.level + ' - ' + esc(l.label) + ' (' + esc(l.desc) + ')</option>'; }).join('') +
+              ar.riskCalculator.likelihoodLevels.map(function (l) { return '<option value="' + l.score + '">' + l.score + ' - ' + esc(l.label) + ' (' + esc(l.desc) + ')</option>'; }).join('') +
             '</select>' +
           '</label>' +
           '<label class="num"><span class="nl2">Impact Severity</span>' +
             '<select id="riskImpact" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line2);background:var(--paper);font:inherit">' +
-              ar.riskCalculator.impactLevels.map(function (l) { return '<option value="' + l.level + '">' + l.level + ' - ' + esc(l.label) + ' (' + esc(l.desc) + ')</option>'; }).join('') +
+              ar.riskCalculator.impactLevels.map(function (l) { return '<option value="' + l.score + '">' + l.score + ' - ' + esc(l.label) + ' (' + esc(l.desc) + ')</option>'; }).join('') +
             '</select>' +
           '</label>' +
         '</div>' +
@@ -1418,7 +1418,7 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
     var h = '<div class="eyebrow"><a href="#/">Atlas</a> / <a href="#/d">Decisions</a> / Tool</div><h1>Solution shaper</h1>' +
       '<p class="lede">Describe the system. Get a starting shape you can argue with.</p>' +
       '<div class="callout"><b>Read this first</b>This is a rule-based starting point, not an architecture sign-off. It shows the usual shape for your answers and the decisions most worth a conversation. Your evals and constraints override it.</div>' +
-      '<div class="shaper"><form id="shForm" class="shform" onsubmit="return false">';
+      '<div class="shaper"><form id="shForm" class="shform">';
     Q.forEach(function (q) {
       h += '<fieldset data-q="' + q.id + '"><legend>' + esc(q.label) + '</legend>' + q.options.map(function (o) {
         return '<label class="opt"><input type="radio" name="' + q.id + '" value="' + o[0] + '"><span>' + esc(o[1]) + '</span></label>';
@@ -1564,7 +1564,7 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
   function pageCalculator() {
     var h = '<div class="eyebrow"><a href="#/">Atlas</a> / <a href="#/d">Decisions</a> / Tool</div><h1>Cost per task</h1>' +
       '<p class="lede">Unit economics for an LLM feature, and which levers move them.</p>' +
-      '<div class="wide"><div class="calc"><form id="calcForm" class="calcform" onsubmit="return false">';
+      '<div class="wide"><div class="calc"><form id="calcForm" class="calcform">';
     CALC_FIELDS.forEach(function (g) {
       h += '<fieldset><legend>' + esc(g[0]) + '</legend>';
       g[1].forEach(function (f) {
@@ -1646,19 +1646,18 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
 
     // Check for Workload Release Gates
     var gateKey = pb.id.indexOf('rag') > -1 ? 'rag' : (pb.id.indexOf('multi-agent') > -1 ? 'agent' : (pb.id.indexOf('genaiops') > -1 ? 'ml' : null));
-    if (gateKey && A.workloadGates && A.workloadGates[gateKey]) {
-      h += '<h2>Workload-Specific Production Release Gates</h2>' +
-        '<p style="max-width:68ch">Mandatory exit criteria before this architecture can be promoted from pilot to general production.</p>' +
+    var gateSet = gateKey && A.workloadGates && A.workloadGates[gateKey];
+    if (gateSet && gateSet.items && gateSet.items.length) {
+      h += '<h2>' + esc(gateSet.title) + '</h2>' +
+        '<p style="max-width:68ch">' + esc(gateSet.description) + '</p>' +
         '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
-        '<th>Gate ID</th><th>Quality Requirement</th><th>Threshold Target</th><th>Blocking Level</th><th>Verification Tooling</th>' +
+        '<th>Gate ID</th><th>Gate</th><th>What must be true</th>' +
         '</tr></thead><tbody>' +
-        A.workloadGates[gateKey].map(function (g) {
+        gateSet.items.map(function (g) {
           return '<tr>' +
             '<td><code>' + esc(g.id) + '</code></td>' +
-            '<td><b>' + esc(g.gate) + '</b></td>' +
-            '<td>' + esc(g.threshold) + '</td>' +
-            '<td><span class="severity-pill ' + (g.blocking === 'Hard Block' ? 'critical' : 'medium') + '">' + esc(g.blocking) + '</span></td>' +
-            '<td><small>' + esc(g.tooling) + '</small></td>' +
+            '<td><b>' + esc(g.title) + '</b></td>' +
+            '<td>' + fmt(g.desc) + '</td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>';
@@ -1911,6 +1910,7 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
     $('#menuBtn').setAttribute('aria-expanded', 'false');
     var cs = $('.side a[aria-current=page]'); if (cs && cs.scrollIntoView) cs.scrollIntoView({ block: 'nearest' });
   }
+  document.addEventListener('submit', function (e) { e.preventDefault(); });
   window.addEventListener('hashchange', render);
 
   /* ---------- chrome: nav, theme, search ---------- */
@@ -1924,67 +1924,48 @@ const appContent = `/* AWS for AI systems — atlas app. Plain JS, no build step
     try { localStorage.setItem('atlas-theme', next); } catch (e) {}
   });
 
-  var overlay = $('#overlay'), q = $('#q'), resultsEl = $('#results'), sel = 0, hits = [];
-  var index = A.services.map(function (s) {
-    return { type: 'Service', href: '#/s/' + s.id, name: s.name, id: s.id, tag: s.tag, cat: catById[s.cat].name,
-      hay: [s.name, s.id, s.tag, s.what, s.ml.join(' '), s.gotchas.join(' '), s.edges.join(' ')].join(' ').toLowerCase() };
-  }).concat(A.architectures.map(function (a) {
-    return { type: 'Architecture', href: '#/a/' + a.id, name: a.name, id: a.id, tag: a.short, cat: 'Architecture', hay: (a.name + ' ' + a.short + ' ' + (a.why || []).join(' ')).toLowerCase() };
-  })).concat(A.decisions.map(function (d) {
-    return { type: 'Decision', href: '#/d/' + d.id, name: d.title, id: d.id, tag: d.question, cat: 'Decision guide',
-      hay: plain([d.title, d.question, d.why, d.em.call, d.pe.call, d.redflags.join(' '), d.ask.join(' '), d.rules.map(function (r) { return r.join(' '); }).join(' ')].join(' ')).toLowerCase() };
-  })).concat(A.engineeringPlaybooks.map(function (p) {
-    return { type: 'Playbook', href: '#/p/' + p.id, name: p.title, id: p.id, tag: p.tag, cat: 'Playbook',
-      hay: (p.title + ' ' + p.tag + ' ' + p.intro + ' ' + p.sections.map(function (s) { return s.title + ' ' + (s.body || '') + ' ' + (s.bullets ? s.bullets.join(' ') : ''); }).join(' ')).toLowerCase() };
-  })).concat(A.toolkit.templates.map(function (t) {
-    return { type: 'Template', href: '#/toolkit', name: t.title, id: t.id, tag: t.description, cat: 'Manager Template', hay: (t.title + ' ' + t.description).toLowerCase() };
-  })).concat(A.selector.workloads.map(function (w) {
-    return { type: 'Selector', href: '#/selector', name: w.title, id: w.id, tag: w.keyDecision, cat: 'Service Selector (' + w.workloadProfile + ')', hay: (w.title + ' ' + w.workloadProfile + ' ' + w.keyDecision + ' ' + w.recommended.service).toLowerCase() };
-  })).concat(A.models.registry.map(function (m) {
-    return { type: 'Model', href: '#/models', name: m.name, id: m.id, tag: m.useCase, cat: 'Model Registry (' + m.provider + ')', hay: (m.name + ' ' + m.id + ' ' + m.provider + ' ' + m.useCase).toLowerCase() };
-  })).concat([
-    { type: 'Workspace', href: '#/', name: 'Command Centre', id: 'command', tag: 'Executive portfolio health, attention items, decisions today, daily schedule', cat: 'Command Centre', hay: 'command centre portfolio kpi attention decisions schedule' },
-    { type: 'Workspace', href: '#/delivery', name: 'AI Project Delivery Lifecycle', id: 'delivery', tag: '12 phases from discovery to decommission, 12 active squad initiatives', cat: 'Lifecycle Centre', hay: 'delivery lifecycle phases portfolio roadmap projects gates' },
-    { type: 'Workspace', href: '#/arch-review', name: 'Architecture Review Board (ARB)', id: 'arch-review', tag: '12 review dimensions, risk calculator, systemic risk view across squads', cat: 'Governance', hay: 'arb architecture review risk scoring likelihood impact dimensions' },
-    { type: 'Workspace', href: '#/selector', name: 'AWS AI Service Selection Matrix', id: 'selector', tag: '14 workloads with recommended services and rejection reasons', cat: 'Decision Tool', hay: 'selector service matrix workloads rag agent batch bedrock sagemaker' },
-    { type: 'Workspace', href: '#/models', name: 'Enterprise Model Registry', id: 'models', tag: '16 foundation models, token economics, latency, promotion policy', cat: 'Model Platform', hay: 'models registry claude bedrock nova llama titan lifecycle promotion' },
-    { type: 'Workspace', href: '#/eval', name: 'AI Evaluation & Quality Engineering', id: 'eval', tag: '13 evaluation layers, 28 metrics dictionary, 12 release gates', cat: 'Quality Engineering', hay: 'eval evaluation metrics quality gates golden dataset testing ragas' },
-    { type: 'Workspace', href: '#/finops', name: 'AI FinOps & Unit Economics', id: 'finops', tag: 'Cost per task, 17 cost tiers, 5 scenarios, 17 cost levers, approval gates', cat: 'FinOps', hay: 'finops budget unit economics cost per task calculator pricing levers' },
-    { type: 'Workspace', href: '#/ops', name: 'Production AI Operations & SRE', id: 'ops', tag: '12 reliability principles, SLO error budgets, 14 chaos drills, dashboards', cat: 'Operations', hay: 'ops sre reliability chaos drills runbooks cloudwatch latency errors' },
-    { type: 'Workspace', href: '#/gov', name: 'Security, Governance & Compliance', id: 'gov', tag: 'Control Tower landing zones, NIST AI RMF, ISO 42001, EU AI Act, DPDP Act', cat: 'Security & Governance', hay: 'governance security compliance nist iso eu ai act dpdp scp landing zone' },
-    { type: 'Workspace', href: '#/leadership', name: 'Leadership & Technical Debt', id: 'leadership', tag: '10-domain competency matrix, productivity metrics, 13 tech debts', cat: 'Leadership', hay: 'leadership workforce skills matrix technical debt maturity competency' },
-    { type: 'Workspace', href: '#/toolkit', name: 'Manager Toolkit & 22 Templates', id: 'toolkit', tag: 'RACI, RAID, use case assessment, 22 copyable markdown templates', cat: 'Toolkit', hay: 'toolkit templates raci raid estimation evaluation postmortem adr' },
-    { type: 'Workspace', href: '#/labs', name: 'Hands-on Labs & Roadmaps', id: 'labs', tag: 'Role roadmaps, 5 implementation labs, AWS Architecture links', cat: 'Labs', hay: 'labs exercises tutorial roadmaps learn curriculum hands-on' }
-  ]);
-
-  function openSearch() { overlay.hidden = false; q.value = ''; runSearch(); q.focus(); }
-  function closeSearch() { overlay.hidden = true; }
-  function runSearch() {
-    var terms = q.value.toLowerCase().split(/\\s+/).filter(Boolean);
-    hits = index.concat(A.searchEntries ? A.searchEntries() : []).map(function (it) {
-      var score = 0, ok = true;
-      terms.forEach(function (t) {
-        var nm = it.name.toLowerCase(), s = 0;
-        if (nm.indexOf(t) === 0) s = 100; else if (nm.indexOf(t) > -1) s = 70; else if (it.id.indexOf(t) > -1) s = 55;
-        else if (it.tag.toLowerCase().indexOf(t) > -1) s = 30; else if (it.hay.indexOf(t) > -1) s = 10;
-        if (!s) ok = false; score += s;
-      });
-      return { it: it, score: terms.length ? (ok ? score : 0) : 1 };
-    }).filter(function (h) { return h.score > 0; }).sort(function (a, b) { return b.score - a.score || a.it.name.localeCompare(b.it.name); }).slice(0, 14);
-    sel = 0; paint();
+  /* ---- Search: index/query logic lives in assets/search.js (unit-tested in Node) ---- */
+  var overlay = $('#overlay'), q = $('#q'), resultsEl = $('#results'), filtersEl = $('#searchFilters'), sel = 0, hits = [], kind = 'all';
+  var S = window.AtlasSearch, index = S.build(A);
+  var kindCounts = {};
+  index.forEach(function (it) { kindCounts[it.kind] = (kindCounts[it.kind] || 0) + 1; });
+  function paintFilters() {
+    filtersEl.innerHTML = [['all', 'All']].concat(S.KINDS.filter(function (k) { return kindCounts[k[0]]; })).map(function (k) {
+      return '<button type="button" class="chip' + (k[0] === kind ? ' on' : '') + '" data-kind="' + k[0] + '" aria-pressed="' + (k[0] === kind) + '">' + esc(k[1]) + '</button>';
+    }).join('');
   }
+  /* Highlights query words. Matching runs on the raw text and each piece is escaped separately, so a query
+     such as "amp" can never cut through an HTML entity like &amp;. */
+  function mark(text, terms) {
+    var words = terms.filter(function (t) { return t.length > 1; }).map(function (t) { return t.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&'); });
+    if (!words.length) return esc(text);
+    var re = new RegExp('(' + words.join('|') + ')', 'ig');
+    return String(text).split(re).map(function (part, i) { return i % 2 ? '<mark>' + esc(part) + '</mark>' : esc(part); }).join('');
+  }
+  function openSearch() { overlay.hidden = false; q.value = ''; kind = 'all'; paintFilters(); runSearch(); q.focus(); }
+  function closeSearch() { overlay.hidden = true; }
+  function runSearch() { hits = S.query(index, q.value, kind, 15); sel = 0; paint(); }
   function paint() {
-    resultsEl.innerHTML = hits.length ? hits.map(function (h, i) {
-      return '<li role="option"><a href="' + h.it.href + '" class="' + (i === sel ? 'sel' : '') + '"><b>' + esc(h.it.name) + ' <small style="font-weight:400;color:var(--muted)">· ' + esc(h.it.cat) + '</small></b><span>' + esc(h.it.tag) + '</span></a></li>';
-    }).join('') : '<li class="none">No matches. Try a service, model, template, or keyword like “eval”, “risk”, or “budget”.</li>';
+    var terms = q.value.toLowerCase().split(/\\s+/).filter(Boolean);
+    resultsEl.innerHTML = hits.length ? hits.map(function (it, i) {
+      return '<li role="option" aria-selected="' + (i === sel) + '"><a href="' + esc(it.href) + '" class="' + (i === sel ? 'sel' : '') + '"><b>' + mark(it.name, terms) +
+        ' <small class="muted-s">· ' + esc(it.type) + (it.cat && it.cat !== it.type ? ' · ' + esc(it.cat) : '') + '</small></b><span>' + mark(plain(it.tag).slice(0, 160), terms) + '</span></a></li>';
+    }).join('') : '<li class="none">No matches' + (kind !== 'all' ? ' in this filter' : '') + '. Try a service name (“Bedrock”), a concept (“throttling”, “vector”), an acronym (“RAG”, “SLO”, “MCP”) or an error code (“429”).' +
+      (kind !== 'all' ? ' <button type="button" class="chip" data-kind="all">Search everything</button>' : '') + '</li>';
+    var st = $('#searchStatus'); if (st) st.textContent = hits.length + (hits.length === 1 ? ' result' : ' results');
+    var cur = resultsEl.querySelector('a.sel'); if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' });
   }
   $('#searchBtn').addEventListener('click', openSearch);
-  overlay.addEventListener('click', function (e) { if (e.target === overlay || e.target.closest('a')) closeSearch(); });
+  overlay.addEventListener('click', function (e) {
+    var chip = e.target.closest('[data-kind]');
+    if (chip) { kind = chip.getAttribute('data-kind'); paintFilters(); runSearch(); q.focus(); return; }
+    if (e.target === overlay || e.target.closest('a')) closeSearch();
+  });
   q.addEventListener('input', runSearch);
   q.addEventListener('keydown', function (e) {
     if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(hits.length - 1, sel + 1); paint(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(0, sel - 1); paint(); }
-    else if (e.key === 'Enter' && hits[sel]) { location.hash = hits[sel].it.href; closeSearch(); }
+    else if (e.key === 'Enter' && hits[sel]) { location.hash = hits[sel].href; closeSearch(); }
   });
   document.addEventListener('keydown', function (e) {
     var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || ''));
