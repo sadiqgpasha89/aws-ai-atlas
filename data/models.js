@@ -3,6 +3,16 @@
    token pricing, promotion policies, and migration playbooks. */
 window.ATLAS = window.ATLAS || {};
 window.ATLAS.models = {
+  /* Provenance (see docs/content/README.md). verifiedOn stays null until someone checks the figures against the sources and records the date. */
+  provenance: {
+    verifiedOn: null,
+    sources: [
+      { label: 'Amazon Bedrock supported foundation models', url: 'https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html' },
+      { label: 'Amazon Bedrock pricing', url: 'https://aws.amazon.com/bedrock/pricing/' }
+    ],
+    /* Fields in each registry row that describe a hypothetical organisation, not published or measured facts. */
+    illustrativeFields: ['status', 'qualityScore', 'latencyP50', 'latencyP95', 'dataClassApproved', 'evalBenchmark', 'ownerTeam', 'reviewDate']
+  },
   registry: [
     {
       id: 'claude-3-7-sonnet',

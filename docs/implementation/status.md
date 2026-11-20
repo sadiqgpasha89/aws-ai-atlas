@@ -25,6 +25,7 @@ Done in this iteration: Phase 0 (foundations) and the Phase 1 management core (p
 | CSV (formula-injection safe) and Markdown exports | Done | `assets/lib/exporters.js` |
 | Unit tests (61) and CI gate | Done | `tests/`, `.github/workflows/pages.yml` |
 | Honest content status: removed the unsubstantiated "AWS Verified 2026" badges, added a notice on every reference page and a `#/about/content` page; `check.mjs` fails if a "Verified <year>" claim reappears | Done | `assets/ui/content.js`, `scripts/check.mjs` |
+| Model registry provenance: sources, "last verified: not recorded", and an "example" mark on columns that describe a hypothetical organisation; `check.mjs` validates the provenance block | Done | `data/models.js`, `scripts/check.mjs` |
 | Accessibility basics (labels, keyboard, text+symbol status, live regions) | Done, checked by script and by hand on the main pages | see `docs/testing/testing.md` |
 
 ## Not done
