@@ -2627,5 +2627,377 @@ window.ATLAS.decisions = [
         "Telemetry dashboard tracking token consumption against service quota thresholds in real time."
       ]
     }
+  },
+  {
+    "id": "single-vs-multiagent",
+    "theme": "architecture",
+    "lead": "both",
+    "title": "Single agent vs multi-agent coordination",
+    "question": "When should we decompose a task across multiple specialized agents versus keeping a single well-prompted agent?",
+    "door": "two-way",
+    "doorNote": "Easy to start with a single agent and break into multi-agent later as tool schemas expand.",
+    "why": "Multi-agent systems add severe operational complexity: inter-agent communication latency multiplies, debugging non-deterministic message loops is notoriously difficult, and token consumption scales exponentially.",
+    "cols": [
+      "Architecture Pattern",
+      "Coordination Overhead",
+      "Failure Modes",
+      "Fits When",
+      "Main Risk"
+    ],
+    "rows": [
+      [
+        "Single Agent with Tool Calling",
+        "Lowest (Single reasoning loop)",
+        "Tool hallucination if schema > 15 tools",
+        "Tasks requiring 1 to 5 sequential steps within a single domain",
+        "Context window dilution as conversational history and tool outputs grow"
+      ],
+      [
+        "Supervisor-Worker Multi-Agent Swarm",
+        "High (Supervisor plans, delegates, synthesizes)",
+        "Cascading delegation errors; agent deadlocks",
+        "Complex cross-functional tasks (e.g. researcher + coder + compliance reviewer)",
+        "Runaway token burn from chatter between agents"
+      ],
+      [
+        "Deterministic Orchestration + AI Nodes",
+        "Zero (AWS Step Functions manages transitions)",
+        "Deterministic pipeline failure handled by standard retries",
+        "Fixed enterprise business processes where order of operations is legally mandated",
+        "Inflexible if user asks out-of-order queries"
+      ]
+    ],
+    "rules": [
+      [
+        "The workflow can be solved with <= 10 tools and a single clear system prompt",
+        "Use a single agent. Do not introduce multi-agent coordination overhead."
+      ],
+      [
+        "The task requires distinct specialized roles that require isolated context and confidential access boundaries",
+        "Use supervisor-worker multi-agent with Bedrock Agents or AgentCore, setting hard token caps per worker."
+      ],
+      [
+        "The business process must follow fixed compliance sequences (e.g. KYC verification before loan approval)",
+        "Use deterministic Step Functions state machine with LLMs as individual worker tasks, not an autonomous agent swarm."
+      ]
+    ],
+    "redflags": [
+      "Adopting a 5-agent swarm for a task that a single well-prompted Claude 3.7 Sonnet call handles cleanly.",
+      "No maximum execution step count or token budget defined across the multi-agent network.",
+      "Agents delegating endlessly to one another without converging on a final user answer."
+    ],
+    "ask": [
+      "Can this problem be solved by a single agent with 3 tools and a structured prompt?",
+      "What is the measured latency and token cost difference between single-agent and multi-agent prototypes?",
+      "How do we trace and debug an inter-agent hallucination when an error cascades through 3 sub-agents?"
+    ],
+    "revisit": "Revisit when a single agent's tool catalog exceeds 20 tools or prompt context exceeds 50,000 tokens per turn.",
+    "related": [
+      "bedrock-agents",
+      "agentcore",
+      "stepfunctions",
+      "lambda"
+    ],
+    "em": {
+      "call": "Default to a single agent with strict tool boundaries. Authorize multi-agent architectures only when empirical evaluation proves superior task completion.",
+      "own": [
+        "ROI justification for higher token consumption in multi-agent designs.",
+        "Team on-call SLA and debugging tooling sign-offs for non-deterministic multi-agent systems."
+      ],
+      "evidence": [
+        "Side-by-side benchmark comparison (single vs multi-agent) measuring Task Completion Rate and Cost Per Task.",
+        "Runaway token protection audit verifying hard circuit breakers in code."
+      ]
+    },
+    "pe": {
+      "call": "Use [[stepfunctions]] for deterministic coordination between specialized agents; isolate tool permissions per agent using dedicated IAM roles.",
+      "own": [
+        "Distributed tracing instrumentation (OpenTelemetry correlation IDs across agent handoffs).",
+        "State persistence architecture in [[dynamodb]] to enable resumable agent workflows."
+      ],
+      "evidence": [
+        "Distributed trace waterfall graph showing latency breakdown across agent reasoning steps.",
+        "Chaos test report proving agent gracefully handles sub-worker tool timeouts without crashing the swarm."
+      ]
+    }
+  },
+  {
+    "id": "model-routing-strategy",
+    "theme": "strategy",
+    "lead": "em",
+    "title": "Dynamic model routing & small-model-first",
+    "question": "Should all requests go to our top frontier model, or should we route queries dynamically based on complexity?",
+    "door": "two-way",
+    "doorNote": "Two-way decision. Routing thresholds can be calibrated dynamically in configuration without application downtime.",
+    "why": "Routing 80% of routine enterprise user queries (greetings, simple extractions, FAQ lookups) to lightweight SLMs (Nova Micro / Claude 3.5 Haiku) reduces monthly inference bills by 65% to 80% while cutting P95 latency in half.",
+    "cols": [
+      "Routing Strategy",
+      "Cost Reduction",
+      "P95 Latency",
+      "Fits When",
+      "Main Risk"
+    ],
+    "rows": [
+      [
+        "Uniform Frontier Model (Claude 3.7 Sonnet)",
+        "0% (Baseline 100% cost)",
+        "Higher (P95 ~2.8s)",
+        "Low-volume internal tools, complex legal reasoning, or code generation where accuracy dominates cost",
+        "Wasting expensive tokens on trivial questions like \"What time is the office open?\""
+      ],
+      [
+        "Lightweight Intent Classifier Router",
+        "60% - 75% savings",
+        "Sub-second for routine (~600ms); 2.5s for complex",
+        "High-volume customer service or employee chat with wide variance in query complexity",
+        "Classifier misclassifies a subtly complex question as simple, returning an inadequate answer"
+      ],
+      [
+        "Cascading Fallback Router",
+        "40% - 50% savings",
+        "Fast on success; doubled latency on fallback",
+        "Workloads with strict automated evaluation of confidence scores or JSON schema validity",
+        "User experiences high latency when small model fails and large model is called sequentially"
+      ]
+    ],
+    "rules": [
+      [
+        "Monthly AI query volume exceeds 100,000 requests and traffic includes simple FAQs",
+        "Deploy a lightweight classifier (Nova Micro) to route routine intents to Haiku/Nova Lite, reserving Sonnet for reasoning."
+      ],
+      [
+        "The application is an autonomous code generation or deep research agent requiring complex multi-turn logic",
+        "Pin to Claude 3.7 Sonnet uniformly; the cost of a failed generation exceeds model savings."
+      ],
+      [
+        "The system experiences occasional 429 throttling during traffic spikes",
+        "Implement Bedrock Cross-Region Inference Profiles with automatic model degradation fallback in the API router."
+      ]
+    ],
+    "redflags": [
+      "Using Claude 3.7 Sonnet to classify 10 intent categories that a 50-line regex or Nova Micro handles for 1/50th the price.",
+      "Hardcoding model selection logic inside UI clients rather than behind a centralized gateway router.",
+      "No automated evaluation tracking whether the router is routing complex queries to under-powered models."
+    ],
+    "ask": [
+      "What percentage of our production queries actually require multi-step reasoning vs simple factual extraction?",
+      "What is our measured misclassification rate, and what is the customer impact of a routed failure?",
+      "Can we enable prompt caching before introducing a complex multi-model routing tier?"
+    ],
+    "revisit": "Revisit when a new model release changes price-performance ratios (e.g. a new frontier SLM beats prior-gen flagship).",
+    "related": [
+      "bedrock",
+      "nova",
+      "lambda",
+      "apigw"
+    ],
+    "em": {
+      "call": "Mandate small-model-first routing for all customer-facing chat workloads exceeding 50,000 queries/month. Track blended cost per task as a key KPI.",
+      "own": [
+        "Unit economics targets and monthly cost savings attribution reporting.",
+        "Quality threshold agreement with Product Management (acceptable degradation envelope < 2%)."
+      ],
+      "evidence": [
+        "FinOps telemetry dashboard showing query distribution across model tiers (target: 70% SLM / 30% Frontier).",
+        "Eval scorecard demonstrating that routed answers meet or exceed 95% satisfaction compared to all-frontier baseline."
+      ]
+    },
+    "pe": {
+      "call": "Implement dynamic routing in a centralized [[lambda]] resolver behind [[apigw]], using semantic embeddings or Nova Micro for intent classification.",
+      "own": [
+        "Router latency budget (routing decision must execute in < 150ms).",
+        "Automated fallback mechanism: escalate to frontier model if small model returns low confidence or invalid JSON."
+      ],
+      "evidence": [
+        "Latency distribution graph proving router overhead is negligible compared to overall model generation time.",
+        "Shadow testing report comparing routed responses against 100% frontier model outputs on golden dataset."
+      ]
+    }
+  },
+  {
+    "id": "prompt-vs-app-caching",
+    "theme": "architecture",
+    "lead": "pe",
+    "title": "Prompt caching vs application-layer semantic caching",
+    "question": "How should we cache LLM interactions to balance latency, cost, and answer freshness?",
+    "door": "two-way",
+    "doorNote": "Two-way decision. Caching layers can be stacked incrementally without changing user-facing APIs.",
+    "why": "LLM calls are expensive and slow. Caching repetitive contexts cuts input costs by up to 90%, while semantic caching avoids foundation model invocations entirely for repeated queries.",
+    "cols": [
+      "Caching Layer",
+      "Cost Reduction",
+      "Latency Impact",
+      "Freshness Guarantee",
+      "Operational Overhead"
+    ],
+    "rows": [
+      [
+        "Bedrock Native Prompt Caching",
+        "Up to 90% input token discount",
+        "2x - 3x faster Time-to-First-Token",
+        "Instant (Cache invalidates automatically when prompt prefix changes)",
+        "Zero infrastructure: configured via single API flag in request header"
+      ],
+      [
+        "Semantic Vector Cache ([[elasticache]] + pgvector)",
+        "100% token savings on cache hit",
+        "Sub-30ms response (bypasses LLM entirely)",
+        "Risk of semantic drift or serving outdated answers to slightly nuanced queries",
+        "Medium: requires running vector similarity search on cache keys with TTL expiration"
+      ],
+      [
+        "Exact Match HTTP Gateway Cache ([[cloudfront]] / [[apigw]])",
+        "100% token savings on identical requests",
+        "Sub-15ms edge response",
+        "Deterministic based on HTTP cache-control headers",
+        "Low: standard cloud caching infrastructure for idempotent queries"
+      ]
+    ],
+    "rules": [
+      [
+        "System prompt or RAG context documentation exceeds 2,500 tokens and is shared across turns",
+        "Enable Bedrock prompt caching immediately. It yields 90% savings on input tokens with zero architectural risk."
+      ],
+      [
+        "Application serves repetitive public inquiries (e.g. public FAQ, customer return policies)",
+        "Deploy a semantic cache in front of Bedrock with strict cosine similarity threshold (>= 0.96) and 24h TTL."
+      ],
+      [
+        "User context includes private, personal, or transactional account balances",
+        "NEVER store in a shared semantic cache. Use Bedrock prompt caching scoped to the session or bypass caching entirely."
+      ]
+    ],
+    "redflags": [
+      "Failing to enable Bedrock prompt caching when passing 100-page policy manuals in system prompts.",
+      "Configuring semantic cache with a loose similarity threshold (e.g. 0.85), returning incorrect answers to nuanced edge cases.",
+      "Caching responses that contain time-sensitive data (e.g. stock prices, real-time inventory) without short TTLs."
+    ],
+    "ask": [
+      "What is our repeated prompt prefix token count, and does it exceed the Bedrock prompt caching minimum threshold?",
+      "What percentage of user queries are semantically identical duplicates of questions asked within the past 7 days?",
+      "How do we purge the cache when an underlying policy document in S3 is updated?"
+    ],
+    "revisit": "Revisit when AWS Bedrock updates prompt caching minimum token thresholds, pricing discounts, or TTL windows.",
+    "related": [
+      "bedrock",
+      "elasticache",
+      "apigw",
+      "cloudfront"
+    ],
+    "em": {
+      "call": "Require prompt caching in all production architecture reviews where system prompts exceed 2,000 tokens. Audit monthly cache hit ratios.",
+      "own": [
+        "Budget allocation and savings verification on monthly AWS Bedrock line item.",
+        "Privacy and customer data isolation sign-offs for shared caching tiers."
+      ],
+      "evidence": [
+        "AWS billing telemetry proving prompt cache read units vs creation units.",
+        "Customer satisfaction metrics verifying zero user complaints regarding stale cached responses."
+      ]
+    },
+    "pe": {
+      "call": "Structure system prompts with static instructions and documentation at the top, and dynamic user inputs at the bottom to maximize cache hits.",
+      "own": [
+        "Cache key design, semantic similarity threshold calibration, and automated cache eviction webhooks.",
+        "Performance benchmarks demonstrating P95 latency reduction on cached queries."
+      ],
+      "evidence": [
+        "CloudWatch dashboard tracking CacheHitRatio and average TTFT for cached vs non-cached requests.",
+        "Unit tests proving cache key hashing correctly isolates multi-tenant user data."
+      ]
+    }
+  },
+  {
+    "id": "central-vs-federated-platform",
+    "theme": "strategy",
+    "lead": "em",
+    "title": "Centralized AI platform team vs federated embedded teams",
+    "question": "Should we build a centralized AI platform team, or let each product squad build their own AI capabilities?",
+    "door": "one-way",
+    "doorNote": "One-way organizational decision. Restructuring platform teams and ownership creates significant organizational friction.",
+    "why": "Fully centralized teams become delivery bottlenecks for product features; fully federated teams lead to architectural chaos, duplicate vendor contracts, and unmonitored security and cost risks.",
+    "cols": [
+      "Operating Model",
+      "Speed to First PoC",
+      "Architecture Standardization",
+      "Security & Governance",
+      "Organizational Friction"
+    ],
+    "rows": [
+      [
+        "Centralized AI Platform Team",
+        "Slower (Squads queue up for platform capacity)",
+        "High (Unified landing zone, tooling, and models)",
+        "Strict centralized control, single audit trail",
+        "High: platform team becomes an innovation bottleneck"
+      ],
+      [
+        "Fully Federated Squads",
+        "Fastest initial prototype velocity",
+        "Low (Fragmented sprawl of vector stores and models)",
+        "High risk: shadow AI, unmonitored keys, compliance leaks",
+        "High: massive duplicate effort across squads"
+      ],
+      [
+        "Hybrid Hub-and-Spoke (Golden Paths)",
+        "Fast delivery on standardized rails",
+        "High (Standardized CDK constructs and guardrails)",
+        "Governed: guardrails enforced at platform layer",
+        "Low: product squads own business logic; platform owns infrastructure"
+      ]
+    ],
+    "rules": [
+      [
+        "Organization has > 3 product squads building generative AI features simultaneously",
+        "Adopt the Hybrid Hub-and-Spoke model. Establish a central platform squad to provide certified Golden Path templates."
+      ],
+      [
+        "The company is subject to strict regulatory compliance (FINRA, HIPAA, DPDP)",
+        "Centralize model access, landing zone VPCs, and Bedrock Guardrails; federate prompt engineering and domain data preparation."
+      ],
+      [
+        "A product squad proposes a bespoke AI tool stack that violates architectural standards",
+        "Require Architecture Review Board (ARB) review; grant timeboxed exceptions only with a committed migration path."
+      ]
+    ],
+    "redflags": [
+      "Every squad opening their own third-party AI SaaS accounts on credit cards without InfoSec approval.",
+      "The central AI team attempting to write prompt templates and domain business logic for product features.",
+      "Zero shared infrastructure, resulting in 5 teams each provisioning separate OpenSearch clusters for small document sets."
+    ],
+    "ask": [
+      "Which capabilities belong in the shared enterprise platform (IAM, Landing Zone, Gateway, Guardrails, FinOps)?",
+      "Which capabilities belong in the product squads (Prompts, Golden Datasets, Business Logic, Tool APIs)?",
+      "What is our internal developer Net Promoter Score (NPS) for our AI platform templates?"
+    ],
+    "revisit": "Revisit annually or when organizational engineering headcount doubles.",
+    "related": [
+      "iam",
+      "cdk",
+      "bedrock",
+      "cloudtrail"
+    ],
+    "em": {
+      "call": "Implement the Hybrid Hub-and-Spoke model. Centralize infrastructure, security, and FinOps; empower product squads to own prompts, evals, and delivery.",
+      "own": [
+        "Cross-squad AI headcount allocation, skill matrix assessments, and training roadmaps.",
+        "Executive AI governance board updates and enterprise license negotiation."
+      ],
+      "evidence": [
+        "Internal adoption metrics showing percentage of squads building on certified Golden Path CDK templates.",
+        "Time-to-production benchmark tracking average days to deploy compliant AI features."
+      ]
+    },
+    "pe": {
+      "call": "Publish modular, reusable [[cdk]] constructs for RAG, agent runtimes, and evaluation pipelines that squads can deploy with one command.",
+      "own": [
+        "Enterprise Golden Path architecture blueprints and Architecture Review Board leadership.",
+        "Platform guardrail automation: automated linting and security scanning in CI/CD."
+      ],
+      "evidence": [
+        "Repository of versioned, documented internal AI CDK constructs with automated test suites.",
+        "Architecture review pass rate and exception tracking register."
+      ]
+    }
   }
 ];

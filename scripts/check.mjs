@@ -177,6 +177,81 @@ else {
   for (const k of ['useCaseAssessment', 'projectEstimation', 'raciMatrix', 'raidTracker', 'qualityGates', 'vendorMatrix', 'skillsMatrix']) {
     if (!A.toolkit[k]) err(`toolkit: missing ${k}`);
   }
+  if (!Array.isArray(A.toolkit.templates) || A.toolkit.templates.length < 22) err('toolkit: expected at least 22 templates');
+  (A.toolkit.templates || []).forEach((t, i) => {
+    if (!t.id || !t.title || !t.templateMarkdown || t.templateMarkdown.length < 150) err(`toolkit template ${i}: invalid template`);
+  });
+}
+
+// command centre
+if (!A.commandCentre || typeof A.commandCentre !== 'object') err('commandCentre: missing');
+else {
+  if (!Array.isArray(A.commandCentre.kpis) || A.commandCentre.kpis.length < 4) err('commandCentre: needs at least 4 kpis');
+  if (!Array.isArray(A.commandCentre.attentionToday) || A.commandCentre.attentionToday.length < 3) err('commandCentre: needs at least 3 attention items');
+  if (!Array.isArray(A.commandCentre.decisionsToday) || A.commandCentre.decisionsToday.length < 3) err('commandCentre: needs at least 3 decisions today');
+  if (!Array.isArray(A.commandCentre.dailySchedule) || A.commandCentre.dailySchedule.length < 6) err('commandCentre: needs at least 6 schedule blocks');
+}
+
+// delivery
+if (!A.delivery || typeof A.delivery !== 'object') err('delivery: missing');
+else {
+  if (!Array.isArray(A.delivery.phases) || A.delivery.phases.length !== 12) err('delivery: expected 12 phases');
+  if (!Array.isArray(A.delivery.projects) || A.delivery.projects.length < 10) err('delivery: expected at least 10 projects');
+}
+
+// arch review
+if (!A.archReview || typeof A.archReview !== 'object') err('archReview: missing');
+else {
+  if (!Array.isArray(A.archReview.dimensions) || A.archReview.dimensions.length !== 12) err('archReview: expected 12 dimensions');
+}
+
+// selector
+if (!A.selector || typeof A.selector !== 'object') err('selector: missing');
+else {
+  if (!Array.isArray(A.selector.workloads) || A.selector.workloads.length < 12) err('selector: expected at least 12 workloads');
+}
+
+// models
+if (!A.models || typeof A.models !== 'object') err('models: missing');
+else {
+  if (!Array.isArray(A.models.registry) || A.models.registry.length < 10) err('models: expected at least 10 models in registry');
+}
+
+// eval
+if (!A.eval || typeof A.eval !== 'object') err('eval: missing');
+else {
+  if (!Array.isArray(A.eval.layers) || A.eval.layers.length < 10) err('eval: expected at least 10 layers');
+  if (!Array.isArray(A.eval.metricsDictionary) || A.eval.metricsDictionary.length < 15) err('eval: expected at least 15 metrics');
+  if (!Array.isArray(A.eval.productionReleaseGate) || A.eval.productionReleaseGate.length < 10) err('eval: expected at least 10 release gates');
+}
+
+// finops
+if (!A.finops || typeof A.finops !== 'object') err('finops: missing');
+else {
+  if (!Array.isArray(A.finops.costCategories) || A.finops.costCategories.length < 15) err('finops: expected at least 15 cost categories');
+  if (!Array.isArray(A.finops.scenarios) || A.finops.scenarios.length < 4) err('finops: expected at least 4 scenarios');
+}
+
+// sre
+if (!A.sre || typeof A.sre !== 'object') err('sre: missing');
+else {
+  if (!Array.isArray(A.sre.chaosDrills) || A.sre.chaosDrills.length < 10) err('sre: expected at least 10 chaos drills');
+  if (!Array.isArray(A.sre.slos) || A.sre.slos.length < 5) err('sre: expected at least 5 slos');
+}
+
+// workforce
+if (!A.workforce || typeof A.workforce !== 'object') err('workforce: missing');
+else {
+  if (!Array.isArray(A.workforce.competencies) || A.workforce.competencies.length < 8) err('workforce: expected at least 8 competencies');
+  if (!Array.isArray(A.workforce.technicalDebt) || A.workforce.technicalDebt.length < 10) err('workforce: expected at least 10 technical debt categories');
+  if (!Array.isArray(A.workforce.maturityModel) || A.workforce.maturityModel.length < 5) err('workforce: expected 5 maturity levels');
+}
+
+// compliance
+if (!A.compliance || typeof A.compliance !== 'object') err('compliance: missing');
+else {
+  if (!Array.isArray(A.compliance.frameworks) || A.compliance.frameworks.length < 4) err('compliance: expected at least 4 frameworks');
+  if (!Array.isArray(A.compliance.controlsMatrix) || A.compliance.controlsMatrix.length < 6) err('compliance: expected at least 6 controls');
 }
 
 // labs

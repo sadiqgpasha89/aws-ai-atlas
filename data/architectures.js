@@ -874,5 +874,315 @@ window.ATLAS.architectures = [
       "Flaky LLM-as-a-judge evaluators if evaluation prompts are underspecified or temperature is not set to 0.0.",
       "High CI build times and costs if entire 5,000-case test sets are run on every minor pull request commit."
     ]
+  },
+  {
+    "id": "ai-gateway",
+    "name": "Production AI Gateway & Model Router",
+    "short": "Centralized enterprise entrypoint managing authentication, rate limiting, model routing, prompt caching, guardrails, and cost tracking.",
+    "when": "You have multiple squads consuming foundation models and need a unified policy, quota enforcement, billing attribution, and fallback router.",
+    "flow": [
+      { "s": "cloudfront", "l": "Global Edge & WAF" },
+      { "s": "apigw", "l": "API Gateway Router" },
+      { "s": "lambda", "l": "Policy & Cache Handler" },
+      { "s": "bedrock-guardrails", "l": "Content Guardrails" },
+      { "s": "bedrock", "l": "Multi-Model Inference" },
+      { "s": "cloudwatch", "l": "FinOps & Latency Telemetry" }
+    ],
+    "steps": [
+      [0, "Client requests arrive through [[cloudfront|Amazon CloudFront]] with integrated [[waf|AWS WAF]] enforcing DDoS protection, IP rate limiting, and bot mitigation."],
+      [1, "Requests hit [[apigw|Amazon API Gateway]], which validates API keys, JWT access tokens via [[cognito|Cognito]], and enforces per-tenant usage quotas."],
+      [2, "A high-performance [[lambda|AWS Lambda]] resolver inspects the request, checks semantic cache in [[elasticache|ElastiCache]], and applies dynamic model routing rules."],
+      [3, "Inbound prompts pass through [[bedrock-guardrails|Amazon Bedrock Guardrails]] to filter PII, toxic language, and adversarial prompt injection attempts."],
+      [4, "The routed prompt invokes the target model (or cross-region inference profile) on [[bedrock|Amazon Bedrock]], returning a streaming Server-Sent Events response."],
+      [5, "Usage metrics, input/output token counts, tenant tags, and P95 latencies are emitted to [[cloudwatch|Amazon CloudWatch]] and central log streams."]
+    ],
+    "why": [
+      "Centralizes model governance, preventing teams from managing disparate API keys and leaking unmonitored shadow AI spend.",
+      "Decouples client applications from specific model provider APIs via a standardized REST/OpenAPI facade.",
+      "Enables dynamic model down-routing and prompt caching, reducing organizational AI spend by up to 70%."
+    ],
+    "fails": [
+      "If the centralized Lambda router experiences cold starts or networking timeouts, all enterprise AI applications suffer latency spikes.",
+      "Misconfigured usage plans can accidentally throttle critical production workloads during unexpected legitimate business traffic bursts."
+    ]
+  },
+  {
+    "id": "eval-cicd",
+    "name": "Automated AI Evaluation & CI/CD Pipeline",
+    "short": "Automated regression testing, synthetic golden datasets, safety gates, and canary releases in GitHub Actions and AWS.",
+    "when": "Deploying model, prompt, or RAG changes to production and needing verifiable quality, safety, and latency release gates.",
+    "flow": [
+      { "s": "cdk", "l": "IaC & Prompt Repo" },
+      { "s": "lambda", "l": "Eval Runner Pipeline" },
+      { "s": "bedrock", "l": "LLM-as-a-Judge" },
+      { "s": "sm-monitor", "l": "Quality Gate Analysis" },
+      { "s": "stepfunctions", "l": "Canary Rollout Gate" },
+      { "s": "s3", "l": "Evaluation Lake" }
+    ],
+    "steps": [
+      [0, "Developers commit prompt templates, tool schemas, and configuration codified in [[cdk|AWS CDK]] to version-controlled repositories."],
+      [1, "The CI/CD pipeline triggers an automated evaluation orchestrator in [[lambda|AWS Lambda]] executing against 500+ frozen golden test cases."],
+      [2, "Candidate outputs and ground truth references are evaluated using automated LLM-as-a-judge scorers in [[bedrock|Amazon Bedrock]] for Faithfulness, Relevance, and Safety."],
+      [3, "Evaluation metrics are ingested into [[sm-monitor|SageMaker Model Monitor]] to compute regression deltas against production baseline standards."],
+      [4, "If all 12 mandatory quality gates pass, [[stepfunctions|AWS Step Functions]] triggers a canary release routing 10% live traffic with automated rollback alarms."],
+      [5, "Full evaluation reports, prompt diffs, latency histograms, and judge reasoning traces are archived immutably in [[s3|Amazon S3]]."]
+    ],
+    "why": [
+      "Eliminates subjective manual 'vibe checks' before releasing generative AI updates to production.",
+      "Intercepts prompt regressions, safety bypasses, and tool calling schema breaks before customer impact.",
+      "Enforces reproducible, auditable compliance evidence for every production release."
+    ],
+    "fails": [
+      "Non-deterministic LLM-as-a-judge scoring if judge temperature is not pinned to 0.0 or judge prompts lack few-shot calibration.",
+      "Excessive test execution duration and cost if running thousands of comprehensive evaluations on every minor commit."
+    ]
+  },
+  {
+    "id": "ai-landing-zone",
+    "name": "Enterprise AI Landing Zone & Multi-Account Platform",
+    "short": "AWS Control Tower multi-account architecture with centralized network hub, isolated AI environments, and enterprise governance.",
+    "when": "Scaling AI across multiple squads and departments, requiring strict security boundaries, network isolation, and centralized cost control.",
+    "flow": [
+      { "s": "iam", "l": "Organizations & SCPs" },
+      { "s": "vpc", "l": "Transit Gateway Hub" },
+      { "s": "kms", "l": "Dedicated CMK Encryption" },
+      { "s": "lakeformation", "l": "Governed Data Lake" },
+      { "s": "bedrock", "l": "AI Spoke Accounts" },
+      { "s": "cloudtrail", "l": "Centralized Log Archive" }
+    ],
+    "steps": [
+      [0, "AWS Organizations and Control Tower manage multi-account hierarchy; Service Control Policies (SCPs) enforce mandatory [[iam|AWS IAM]] boundaries and region restrictions."],
+      [1, "An isolated [[vpc|Amazon VPC]] hub-and-spoke network connected via AWS Transit Gateway routes all traffic through centralized AWS Network Firewall and PrivateLink endpoints."],
+      [2, "Each business unit spoke account utilizes dedicated [[kms|AWS KMS]] Customer Managed Keys with strict key policies to prevent cross-account cryptographic access."],
+      [3, "Enterprise data assets in S3 are governed centrally by [[lakeformation|AWS Lake Formation]], providing fine-grained column- and row-level access control."],
+      [4, "AI development, staging, and production spoke accounts access foundation models in [[bedrock|Amazon Bedrock]] privately without traversing the public internet."],
+      [5, "All management events, data access calls, and model invocations are streamed to a tamper-proof Log Archive account via [[cloudtrail|AWS CloudTrail]]."]
+    ],
+    "why": [
+      "Provides blast-radius containment: an error or security breach in experimental dev sandbox cannot impact production customer AI systems.",
+      "Satisfies SOC 2, ISO 42001, and banking regulatory standards for multi-tenant data segregation.",
+      "Centralizes egress security, preventing data exfiltration while simplifying cost allocation across cost centers."
+    ],
+    "fails": [
+      "Transit Gateway data processing charges and centralized PrivateLink endpoint costs can grow if cross-VPC traffic is not monitored.",
+      "Overly restrictive SCPs can inadvertently block developers from testing cutting-edge Bedrock features in sandbox accounts."
+    ]
+  },
+  {
+    "id": "agentic-human-approval",
+    "name": "Agentic AI with Human Approval & Checkpoints",
+    "short": "Autonomous multi-step agent execution with risk-based decision checkpoints, Step Functions callback gates, and durable state.",
+    "when": "Building autonomous agents that perform state-changing real-world actions (payments, database updates, emails) requiring human authorization.",
+    "flow": [
+      { "s": "apigw", "l": "User Task Inbound" },
+      { "s": "bedrock-agents", "l": "Autonomous Agent Planner" },
+      { "s": "dynamodb", "l": "Durable State Store" },
+      { "s": "stepfunctions", "l": "Human Approval Gate" },
+      { "s": "sns", "l": "Approver Notification" },
+      { "s": "cloudwatch", "l": "Audit & Trace Trail" }
+    ],
+    "steps": [
+      [0, "User initiates a complex multi-step request via [[apigw|Amazon API Gateway]], assigning a unique correlation and session ID."],
+      [1, "The planning agent in [[bedrock-agents|Amazon Bedrock Agents]] evaluates the objective, decomposes tasks, and selects tool microservices."],
+      [2, "Before and after each step, the execution plan, tool arguments, and context memory are checkpointed durably in [[dynamodb|Amazon DynamoDB]]."],
+      [3, "When a high-risk tool is selected (e.g. wire transfer > ₹10,000), [[stepfunctions|AWS Step Functions]] pauses execution with a task token callback."],
+      [4, "An alert with action context, risk score, and one-click approve/reject links is dispatched to manager via [[sns|Amazon SNS]] or Slack."],
+      [5, "Upon human callback, the state machine resumes the agent or terminates cleanly, logging full audit records to [[cloudwatch|Amazon CloudWatch]]."]
+    ],
+    "why": [
+      "Prevents catastrophic unauthorized actions or financial losses resulting from agent hallucination or prompt injection.",
+      "Allows agents to execute long-running, multi-hour workflows reliably without losing in-flight state during transient failures.",
+      "Produces an immutable compliance audit record of exactly which human approved what action at what timestamp."
+    ],
+    "fails": [
+      "Human approver bottlenecks: if managers do not respond before Step Functions task token timeout (e.g. 24h), workflows fail or stall.",
+      "State serialization size limits: complex conversational memory stored in DynamoDB must not exceed 400KB item size limit."
+    ]
+  },
+  {
+    "id": "ai-observability-platform",
+    "name": "End-to-End AI Observability & Tracing Platform",
+    "short": "OpenTelemetry distributed tracing, prompt-to-response correlation, vector search latency tracking, and Athena analytics.",
+    "when": "Managing production AI systems and needing full visibility into token burn, P95 latency, retrieval relevance, and operational anomalies.",
+    "flow": [
+      { "s": "apigw", "l": "Trace Injection" },
+      { "s": "bedrock", "l": "Model Telemetry" },
+      { "s": "lambda", "l": "Telemetry Enricher" },
+      { "s": "cloudwatch", "l": "Logs & Alarm Hub" },
+      { "s": "opensearch", "l": "Trace & Span Index" },
+      { "s": "athena", "l": "Log Analytics Lake" }
+    ],
+    "steps": [
+      [0, "Inbound user queries pass through [[apigw|Amazon API Gateway]], which injects W3C `traceparent` headers and correlation IDs."],
+      [1, "Foundation model invocations in [[bedrock|Amazon Bedrock]] stream token usage, TTFT latency, stop reasons, and guardrail intervention flags."],
+      [2, "A lightweight [[lambda|AWS Lambda]] telemetry enricher captures vector search recall scores, chunk IDs, and tool execution status."],
+      [3, "Metrics and structured JSON logs flow to [[cloudwatch|Amazon CloudWatch]], driving real-time SLO alarms and SRE incident notifications."],
+      [4, "Distributed OpenTelemetry trace spans are indexed in [[opensearch|Amazon OpenSearch Service]] for interactive latency and waterfall visual debugging."],
+      [5, "Raw conversational logs and eval traces are partitioned in S3 and queried serverless via [[athena|Amazon Athena]] for weekly FinOps analysis."]
+    ],
+    "why": [
+      "AI systems fail quietly without traditional 500 errors; end-to-end tracing is the only way to diagnose slow or ungrounded responses.",
+      "Enables immediate root-cause isolation: determine whether latency was caused by vector search, model TTFT, or tool microservices.",
+      "Provides granular per-tenant token and cost attribution data for enterprise chargeback billing."
+    ],
+    "fails": [
+      "High CloudWatch log ingestion bills if high-frequency verbose prompt and completion payloads are logged without sampling.",
+      "Risk of logging sensitive customer PII or confidential query text into telemetry stores without automated masking."
+    ]
+  },
+  {
+    "id": "ai-data-platform",
+    "name": "Enterprise AI Data Platform & Feature Store",
+    "short": "Governed ingestion, automated PII redaction, chunking pipelines, online/offline feature storage, and vector sync.",
+    "when": "Building a scalable data foundation that feeds clean, governed, low-latency features and vectors into production AI systems.",
+    "flow": [
+      { "s": "s3", "l": "Raw Data Ingestion" },
+      { "s": "glue", "l": "ETL & PII Sanitizer" },
+      { "s": "lakeformation", "l": "Governance & RBAC" },
+      { "s": "sm-feature-store", "l": "Online/Offline Store" },
+      { "s": "opensearch", "l": "Vector Index" },
+      { "s": "bedrock-kb", "l": "Knowledge Retrieval" }
+    ],
+    "steps": [
+      [0, "Raw unstructured documents, transaction logs, and customer interactions land in [[s3|Amazon S3]] data lake storage."],
+      [1, "Serverless [[glue|AWS Glue]] ETL jobs extract text, perform PII redaction, validate data schemas, and partition clean datasets."],
+      [2, "Access permissions, row-level filters, and data cataloging are governed centrally via [[lakeformation|AWS Lake Formation]]."],
+      [3, "Engineered structured features are ingested into [[sm-feature-store|SageMaker Feature Store]] with ultra-low latency online reads."],
+      [4, "Document text is chunked semantically and indexed into [[opensearch|Amazon OpenSearch Service]] alongside document ACL metadata."],
+      [5, "Production agents and RAG applications query pre-computed features and vectorized knowledge via [[bedrock-kb|Bedrock Knowledge Bases]]."]
+    ],
+    "why": [
+      "Garbage in, garbage out: 80% of production AI failures stem from corrupt, stale, or unauthorized data rather than model issues.",
+      "Synchronizes online feature serving (< 10ms) with offline batch training lakes, preventing data distribution skew.",
+      "Ensures consistent document access control enforcement between the primary data lake and vector search indices."
+    ],
+    "fails": [
+      "Stale vector indices if document update and deletion events in S3 fail to trigger downstream chunk re-indexing pipelines.",
+      "Feature store drift if online and offline data ingestion pipelines diverge in transformation logic."
+    ]
+  },
+  {
+    "id": "multiregion-resilience",
+    "name": "Multi-Region AI Resilience & Failover",
+    "short": "Active-active and active-standby multi-region deployment with automated DNS failover, cross-region replication, and inference fallback.",
+    "when": "Mission-critical AI workloads requiring 99.99% availability, disaster recovery, and resilience against regional AWS impairments.",
+    "flow": [
+      { "s": "route53", "l": "Global Latency DNS" },
+      { "s": "cloudfront", "l": "Global Edge Shield" },
+      { "s": "apigw", "l": "Regional API Entry" },
+      { "s": "bedrock", "l": "Cross-Region Profiles" },
+      { "s": "dynamodb", "l": "Global Tables" },
+      { "s": "s3", "l": "Cross-Region Replication" }
+    ],
+    "steps": [
+      [0, "Global client traffic is routed to the closest healthy AWS region via [[route53|Amazon Route 53]] latency and health-check policies."],
+      [1, "[[cloudfront|Amazon CloudFront]] terminates SSL at edge points of presence, providing DDoS protection and intelligent origin failover."],
+      [2, "Each region runs an independent, identical serverless stack fronted by [[apigw|Amazon API Gateway]] in private multi-AZ subnets."],
+      [3, "Model inference calls utilize [[bedrock|Amazon Bedrock]] Cross-Region Inference Profiles to dynamically shift load to standby regions during capacity constraints."],
+      [4, "Conversational history and agent state synchronize bi-directionally across regions in < 1 second using [[dynamodb|Amazon DynamoDB]] Global Tables."],
+      [5, "Document stores and model checkpoints in [[s3|Amazon S3]] replicate automatically across regions via S3 Cross-Region Replication (CRR)."]
+    ],
+    "why": [
+      "Guarantees business continuity even if an entire AWS region experiences major fiber cuts or infrastructure impairments.",
+      "Protects applications from regional Bedrock model quota exhaustion by automatically routing to alternative geographic capacity.",
+      "Achieves Recovery Time Objective (RTO) < 5 minutes and Recovery Point Objective (RPO) < 1 minute."
+    ],
+    "fails": [
+      "DynamoDB Global Tables write conflicts if the same user session is updated simultaneously in two regions before replication completes.",
+      "Substantial data transfer out (DTO) and cross-region replication costs if large vector collections are duplicated across 3+ regions."
+    ]
+  },
+  {
+    "id": "ai-finops-architecture",
+    "name": "AI FinOps & Cost Allocation Engine",
+    "short": "Automated cost allocation tags, real-time token tracking, budget threshold alarms, and Athena cost analytics.",
+    "when": "Managing enterprise AI cloud spend across multiple squads and needing granular per-task unit economics and proactive cost governance.",
+    "flow": [
+      { "s": "apigw", "l": "Tenant Tag Injection" },
+      { "s": "lambda", "l": "Token Telemetry Meter" },
+      { "s": "cloudwatch", "l": "Metric Emission" },
+      { "s": "budgets", "l": "Budget Threshold Alarms" },
+      { "s": "athena", "l": "Cost Analysis Queries" },
+      { "s": "servicequotas", "l": "Automated Throttle" }
+    ],
+    "steps": [
+      [0, "[[apigw|Amazon API Gateway]] extracts tenant ID, project code, and cost center from JWT authentication tokens on every request."],
+      [1, "A post-inference [[lambda|AWS Lambda]] telemetry handler meters exact prompt, completion, and cache tokens consumed."],
+      [2, "Custom FinOps metrics (CostPerTask, TokenBurnRate, CacheHitRate) are published in real-time to [[cloudwatch|Amazon CloudWatch]]."],
+      [3, "[[budgets|AWS Budgets]] evaluates spending velocity against approved monthly squad caps, alerting engineering managers at 80% and 100%."],
+      [4, "Curated AWS Cost and Usage Reports (CUR) partitioned in S3 are queried via [[athena|Amazon Athena]] to calculate exact ROI per project."],
+      [5, "If a tenant or project breaches emergency financial ceilings, [[servicequotas|AWS Service Quotas]] or API Gateway dynamically throttles non-critical requests."]
+    ],
+    "why": [
+      "Eliminates end-of-month cloud bill shock by detecting runaway prompts or looping agents within minutes rather than weeks.",
+      "Provides clear financial evidence to leadership justifying AI platform investments with measured cost-per-successful-task.",
+      "Enables accurate cross-departmental chargeback and showback accounting across business units."
+    ],
+    "fails": [
+      "Incomplete tagging: untagged or ad-hoc resources escape automated attribution and hide in unallocated overhead budgets.",
+      "Aggressive automated throttling could halt legitimate high-priority business transactions if budget ceilings are configured too tightly."
+    ]
+  },
+  {
+    "id": "secure-mcp-platform",
+    "name": "Secure Model Context Protocol (MCP) Tool Platform",
+    "short": "Enterprise tool registry, containerized MCP servers, mTLS authentication, least-privilege IAM, and runtime auditing.",
+    "when": "Exposing enterprise databases, APIs, and tools to AI agents using the open Model Context Protocol standard securely.",
+    "flow": [
+      { "s": "apigw", "l": "MCP Tool Gateway" },
+      { "s": "cognito", "l": "mTLS & OAuth2 Auth" },
+      { "s": "ecs", "l": "Sandboxed MCP Servers" },
+      { "s": "secrets", "l": "Credential Injection" },
+      { "s": "iam", "l": "Scoped Execution Roles" },
+      { "s": "cloudtrail", "l": "Tool Audit Trail" }
+    ],
+    "steps": [
+      [0, "Agent tool requests targeting enterprise MCP servers are routed through [[apigw|Amazon API Gateway]] with request schema validation."],
+      [1, "[[cognito|Amazon Cognito]] and API Gateway mutual TLS (mTLS) verify agent identity and validate short-lived OAuth2 tool authorization scopes."],
+      [2, "MCP tool servers execute in hardened, isolated [[ecs|Amazon ECS]] Fargate containers with read-only root filesystems and zero host access."],
+      [3, "Backing service credentials (database passwords, API tokens) are fetched just-in-time from [[secrets|AWS Secrets Manager]] without baking into images."],
+      [4, "Each individual tool container operates under a scoped [[iam|AWS IAM]] execution role restricted strictly to target resources."],
+      [5, "Every tool invocation, input argument payload, execution duration, and response status is recorded immutably in [[cloudtrail|AWS CloudTrail]]."]
+    ],
+    "why": [
+      "Prevents malicious or compromised agents from executing unauthorized commands, accessing internal networks, or exfiltrating credentials.",
+      "Standardizes tool development across squads using the open MCP protocol while maintaining enterprise AWS security controls.",
+      "Enables hot-swapping and zero-downtime versioning of backend tool microservices without altering agent prompts."
+    ],
+    "fails": [
+      "Tool discovery latency: dynamically querying large MCP tool catalogs on every turn can consume significant agent tokens and time.",
+      "Complex network debugging: strict VPC security groups and mTLS authentication can complicate local developer testing."
+    ]
+  },
+  {
+    "id": "ai-batch-processing",
+    "name": "Large-Scale AI Batch Processing Platform",
+    "short": "Queue-decoupled asynchronous document processing, AWS Batch, Bedrock batch inference (50% discount), and retry isolation.",
+    "when": "Processing massive document backlogs, overnight migrations, or continuous background classification with optimal cost efficiency.",
+    "flow": [
+      { "s": "s3", "l": "Document Ingestion Drop" },
+      { "s": "sqs", "l": "Durable Work Queue" },
+      { "s": "batch", "l": "Spot Container Worker" },
+      { "s": "bedrock", "l": "Batch Inference API" },
+      { "s": "dynamodb", "l": "Job State & Progress" },
+      { "s": "sns", "l": "Completion Notification" }
+    ],
+    "steps": [
+      [0, "Batches of thousands or millions of source files (invoices, resumes, contracts) land in [[s3|Amazon S3]] input buckets."],
+      [1, "S3 ObjectCreated events publish document tasks to an [[sqs|Amazon SQS]] queue configured with a Dead-Letter Queue (DLQ) for failed items."],
+      [2, "[[batch|AWS Batch]] dynamically provisions compute nodes on Amazon EC2 Spot Instances to orchestrate extraction and chunking."],
+      [3, "Chunked prompts are submitted to the [[bedrock|Amazon Bedrock]] Batch Inference API, executing asynchronously within 24 hours at a 50% discount."],
+      [4, "Task completion status, output locations, processing duration, and error codes are tracked in [[dynamodb|Amazon DynamoDB]]."],
+      [5, "Upon batch job completion, [[sns|Amazon SNS]] dispatches summary metrics and triggers downstream ERP ingestion pipelines."]
+    ],
+    "why": [
+      "Captures AWS Bedrock's 50% batch pricing discount, cutting processing costs in half for non-interactive workloads.",
+      "Decoupled queuing guarantees that zero documents are lost during sudden traffic bursts or transient AWS service limits.",
+      "Auto-scales from zero to tens of thousands of concurrent workers and scales back to zero when queue empties."
+    ],
+    "fails": [
+      "Unsuitable for interactive user applications: turnaround time is asynchronous (typically 1 to 24 hours).",
+      "Spot instance preemption on AWS Batch requires idempotent processing to avoid duplicate chunking when tasks resume."
+    ]
   }
 ];

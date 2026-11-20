@@ -1,4 +1,5 @@
-/* AWS for AI systems — atlas app. Plain JS, no build step, hash-routed. */
+/* AWS for AI systems — atlas app. Plain JS, no build step, hash-routed.
+   AI Engineering Management Operating System. */
 (function () {
   'use strict';
   var A = window.ATLAS;
@@ -11,19 +12,19 @@
   A.architectures.forEach(function (a) { archById[a.id] = a; });
 
   /* ---------- text helpers ---------- */
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function fmt(s) {
     return esc(s)
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/\[\[([a-z0-9-]+)(?:\|([^\]]+))?\]\]/g, function (m, id, label) {
+      .replace(/\`([^\`]+)\`/g, '<code>$1</code>')
+      .replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>')
+      .replace(/\\\[\\\[([a-z0-9-]+)(?:\\|([^\\\]]+))?\\\]\\\]/g, function (m, id, label) {
         var sv = byId[id];
         if (!sv) return label || id;
         return '<a href="#/s/' + id + '">' + (label || sv.name) + '</a>';
       });
   }
-  function paras(s) { return String(s).split(/\n\n+/).map(function (p) { return '<p>' + fmt(p) + '</p>'; }).join(''); }
-  function ul(items) { return '<ul>' + items.map(function (i) { return '<li>' + fmt(i) + '</li>'; }).join('') + '</ul>'; }
+  function paras(s) { return String(s || '').split(/\\n\\n+/).map(function (p) { return '<p>' + fmt(p) + '</p>'; }).join(''); }
+  function ul(items) { return '<ul>' + (items || []).map(function (i) { return '<li>' + fmt(i) + '</li>'; }).join('') + '</ul>'; }
   function hueOf(catId) { return catById[catId] ? catById[catId].hue : 25; }
 
   /* ---------- isometric drawing ---------- */
@@ -55,8 +56,9 @@
 
   /* ---------- stepper ---------- */
   function mountStepper(host, spec) {
-    var flow = spec.flow.map(function (f) { return typeof f === 'string' ? { l: f } : f; });
-    var steps = spec.steps.map(function (s) { return { n: s[0], t: s[1] }; });
+    if (!host || !spec) return;
+    var flow = (spec.flow || []).map(function (f) { return typeof f === 'string' ? { l: f } : f; });
+    var steps = (spec.steps || []).map(function (s) { return { n: s[0], t: s[1] }; });
     var cur = 0, timer = null, narrow = null, W = 0, pts = [];
 
     host.innerHTML =
@@ -66,7 +68,7 @@
     var stage = $('.stage', host);
 
     function wrap(label, max) {
-      var words = label.split(' '), lines = [''], k = 0;
+      var words = (label || '').split(' '), lines = [''], k = 0;
       words.forEach(function (w) {
         if ((lines[k] + ' ' + w).trim().length > max && lines[k]) { lines.push(w); k++; } else lines[k] = (lines[k] + ' ' + w).trim();
       });
@@ -149,64 +151,207 @@
   var pendingSteppers = [];
   function stepperHost(spec) { pendingSteppers.push(spec); return '<div class="stepper" data-sp="' + (pendingSteppers.length - 1) + '"></div>'; }
 
-  /* ---------- pages ---------- */
-  function pageHome() {
-    var n = A.services.length;
-    var h = '<div class="wide"><section class="hero"><div>' +
-      '<div class="eyebrow">The AI Engineering Management Operating System · ' + n + ' services · ' + A.architectures.length + ' architectures · ' + A.decisions.length + ' decisions</div>' +
-      '<h1>AWS for AI Systems — an interactive atlas.</h1>' +
-      '<p class="lede">From cloud catalog to engineering management operating system: what to build, how to deliver it, how to govern it, and how to operate multi-agent and generative AI systems in production.</p>' +
+  var afterRender = null;
+  function copyText(text, btn) {
+    var label = btn ? (btn.getAttribute('data-l') || btn.textContent) : '';
+    if (btn) btn.setAttribute('data-l', label);
+    function done(ok) { if (!btn) return; btn.textContent = ok ? 'Copied ✓' : 'Select and copy manually'; setTimeout(function () { btn.textContent = label; }, 1800); }
+    function fallback() {
+      var t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+      document.body.appendChild(t); t.select(); var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(t); done(ok);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, fallback); else fallback();
+  }
+
+  function money(n) {
+    if (!isFinite(n)) return '—';
+    if (n >= 100) return '$' + Math.round(n).toLocaleString('en-US');
+    if (n >= 1) return '$' + n.toFixed(2);
+    if (n >= 0.01) return '$' + n.toFixed(3);
+    return '$' + n.toFixed(5);
+  }
+
+  /* ==========================================================================
+     PAGE 1: AI ENGINEERING MANAGER COMMAND CENTRE (#/ and #/command)
+     ========================================================================== */
+  function pageCommandCentre() {
+    var cc = A.commandCentre;
+    var h = '<div class="wide">';
+    h += '<section class="hero"><div>' +
+      '<div class="eyebrow">Operating System for AI Engineering Leaders · ' + (A.delivery ? A.delivery.projects.length : 12) + ' active initiatives · ₹8.4L monthly spend</div>' +
+      '<h1>AI Engineering Manager Command Centre</h1>' +
+      '<p class="lede">Daily executive operating rhythm, active project portfolio, live production health, and priority decisions for AI/ML, Generative AI, and Agentic workloads on AWS.</p>' +
       '<div class="btns">' +
-        '<a class="btn primary" href="#/p">Engineering Playbooks →</a>' +
-        '<a class="btn" href="#/a">Architectures</a>' +
-        '<a class="btn" href="#/d">Decision Guides</a>' +
-        '<a class="btn" href="#/ops">Operations Centre</a>' +
-        '<a class="btn" href="#/toolkit">Manager Toolkit</a>' +
+        '<a class="btn primary" href="#/delivery">AI Project Lifecycle →</a>' +
+        '<a class="btn" href="#/arch-review">Arch Review Board</a>' +
+        '<a class="btn" href="#/selector">Service Selector</a>' +
+        '<a class="btn" href="#/models">Model Registry</a>' +
+        '<a class="btn" href="#/eval">Eval & Quality</a>' +
+        '<a class="btn" href="#/finops">FinOps & Budget</a>' +
+        '<a class="btn" href="#/ops">Production SRE</a>' +
       '</div>' +
       '</div>' + heroSVG() + '</section>';
 
-    h += '<h2>The 8 Pillars of Production AI Engineering</h2>' +
-      '<p style="max-width:68ch">A complete operational lifecycle for engineering managers, principal engineers, and architects delivering generative AI and multi-agent systems on Amazon Web Services.</p>' +
-      '<div class="grid">' +
-      '<a class="card" style="--h:212" href="#/c/genai"><div class="mini">Pillar 1</div><h3>1. Services Catalogue</h3><p>69 AWS AI, compute, data, and security services with lifecycle status, pricing notes, and implementation gotchas.</p></a>' +
-      '<a class="card" style="--h:268" href="#/a"><div class="mini">Pillar 2</div><h3>2. Reference Architectures</h3><p>13 end-to-end architectures including Traditional RAG, Agentic RAG, GraphRAG, Multimodal RAG, Multi-Agent Orchestration, and GenAIOps.</p></a>' +
-      '<a class="card" style="--h:150" href="#/d"><div class="mini">Pillar 3</div><h3>3. Architecture Decision Centre</h3><p>23 architectural decision guides with dedicated Engineering Manager and Principal Engineer lenses and one-way-door risk markers.</p></a>' +
-      '<a class="card" style="--h:212" href="#/p"><div class="mini">Pillar 4</div><h3>4. AI Engineering Playbooks</h3><p>5 deep playbooks: RAG Engineering, Multi-Agent Orchestration, GenAIOps Lifecycle, Security Hardening, and SRE/Reliability.</p></a>' +
-      '<a class="card" style="--h:25" href="#/gov"><div class="mini">Pillar 5</div><h3>5. Security & Governance</h3><p>AWS Well-Architected AI Landing Zones, multi-account hierarchy, network isolation, 8-pillar security framework, and tenancy models.</p></a>' +
-      '<a class="card" style="--h:185" href="#/ops"><div class="mini">Pillar 6</div><h3>6. Operations Centre</h3><p>Mandatory 10-widget production AI dashboard with CloudWatch queries, 4 SRE runbooks, and AI postmortem template.</p></a>' +
-      '<a class="card" style="--h:40" href="#/toolkit"><div class="mini">Pillar 7</div><h3>7. Manager Toolkit</h3><p>Use-case assessment matrix, project estimation model, RACI matrix, RAID tracker, quality gates, and executive templates.</p></a>' +
-      '<a class="card" style="--h:305" href="#/labs"><div class="mini">Pillar 8</div><h3>8. Hands-on Labs & Roadmaps</h3><p>3 role-based progressive roadmaps (EM, PE, Engineer), 5 hands-on production labs, and official AWS Architecture links.</p></a>' +
+    // Section 1: Executive KPIs
+    h += '<h2>Executive Portfolio & Production KPIs</h2>' +
+      '<div class="cmd-kpis">';
+    cc.kpis.forEach(function (k) {
+      var cls = k.status === 'warn' ? 'warn' : (k.status === 'ok' ? 'ok' : '');
+      h += '<div class="cmd-kpi ' + cls + '">' +
+        '<small>' + esc(k.label) + '</small>' +
+        '<b>' + esc(k.value) + '</b>' +
+        '<span>' + esc(k.sub) + '</span>' +
       '</div>';
+    });
+    h += '</div>';
 
-    h += '<h2>Service catalogue by category</h2><p style="max-width:62ch">Services are grouped by the job they do in an AI/ML system. Each page ends with how to use the service in production, gotchas, and what it pairs with.</p><div class="grid">';
-    A.categories.forEach(function (c) {
-      h += '<a class="card catcard" style="--h:' + c.hue + '" href="#/c/' + c.id + '">' + miniCube(c.hue) + '<div class="mini">' + c.items.length + ' services</div><h3>' + esc(c.name) + '</h3><p>' + esc(c.short) + '</p></a>';
+    // Section 2: "My Attention Today"
+    h += '<h2>🚨 My Attention Today</h2>' +
+      '<p style="max-width:68ch">Immediate blockers, quality gate failures, budget spikes, and regulatory action items requiring engineering management intervention before end of day.</p>' +
+      '<div class="attention-grid">';
+    cc.attentionToday.forEach(function (att) {
+      var sev = att.severity || 'high';
+      h += '<div class="attention-card ' + esc(sev) + '">' +
+        '<div class="attention-top">' +
+          '<span class="chip" style="--h:25">' + esc(att.project) + '</span>' +
+          '<span class="severity-pill ' + esc(sev) + '">' + esc(att.badge || sev.toUpperCase()) + '</span>' +
+        '</div>' +
+        '<h4>' + esc(att.issue) + '</h4>' +
+        '<div class="attention-impact"><b>Impact:</b> ' + esc(att.impact) + '</div>' +
+        '<div class="attention-action"><b>Required EM Action:</b> ' + esc(att.action) + '</div>' +
+        '<div style="margin-top:auto;padding-top:10px">' +
+          '<a class="btn" style="font-size:12px;padding:4px 10px" href="#/delivery">Open Project in Delivery Tracker →</a>' +
+        '</div>' +
+      '</div>';
     });
-    h += '</div><h2>Reference Architectures (13)</h2><p style="max-width:62ch">Production blueprints from classic RAG to multi-agent orchestration and GenAIOps pipelines. Step-through diagrams where every node links to its service.</p><div class="grid">';
-    A.architectures.forEach(function (a) {
-      h += '<a class="card" style="--h:25" href="#/a/' + a.id + '"><div class="mini">Architecture</div><h3>' + esc(a.name) + '</h3><p>' + esc(a.short) + '</p></a>';
+    h += '</div>';
+
+    // Section 3: "Today's Management Decisions"
+    h += '<h2>⚖️ Today\'s Management Decisions</h2>' +
+      '<p style="max-width:68ch">Architectural, vendor, and risk sign-offs currently waiting on your desk.</p>' +
+      '<div class="decisions-grid">';
+    cc.decisionsToday.forEach(function (dec) {
+      h += '<div class="decision-box">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span class="severity-pill high">' + esc(dec.category) + '</span>' +
+          '<small style="font:600 11px var(--mono);color:var(--warn)">' + esc(dec.status) + '</small>' +
+        '</div>' +
+        '<h4>' + esc(dec.title) + '</h4>' +
+        '<div class="decision-context">' + esc(dec.context) + '</div>' +
+        '<div class="decision-rec"><b>Recommendation:</b> ' + esc(dec.recommendation) + '</div>' +
+        '<div style="font-size:12px;color:var(--muted)"><b>Options:</b> ' + esc((dec.options || []).join(' · ')) + '</div>' +
+        '<div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding-top:10px">' +
+          '<a class="btn primary" style="font-size:12px;padding:4px 12px" href="#/arch-review">Review in ARB →</a>' +
+        '</div>' +
+      '</div>';
     });
-    h += '</div><h2>Leadership & Decision Tools</h2><p style="max-width:62ch">Practical instruments for engineering managers and principal engineers navigating high-stakes AI architectural decisions.</p><div class="grid">' +
-      '<a class="card" style="--h:25" href="#/d/em"><div class="mini">Decision tab</div><h3>Engineering managers</h3><p>Default calls, evidence to ask for and launch gates, across ' + A.decisions.length + ' guides.</p></a>' +
-      '<a class="card" style="--h:268" href="#/d/pe"><div class="mini">Decision tab</div><h3>Principal engineers</h3><p>Default designs, trade-offs and the tests to demand in design review.</p></a>' +
-      '<a class="card" style="--h:25" href="#/d/shaper"><div class="mini">Interactive</div><h3>Solution shaper</h3><p>Seven questions in, a starting stack and the decisions to make next out.</p></a>' +
-      '<a class="card" style="--h:150" href="#/d/checklists"><div class="mini">Checklist</div><h3>Readiness checklists</h3><p>Maturity ladder, production readiness and a decision-record template.</p></a>' +
-      '<a class="card" style="--h:185" href="#/d/calculator"><div class="mini">Calculator</div><h3>Cost per task</h3><p>See which levers move the bill most.</p></a>' +
-      '<a class="card" style="--h:40" href="#/toolkit"><div class="mini">Toolkit</div><h3>EM Frameworks & RACI</h3><p>Estimation model, RACI matrix, RAID log and review templates.</p></a>' +
-      '</div></div>';
+    h += '</div>';
+
+    // Section 4: "Daily Workflow Schedule"
+    h += '<h2>📅 Daily AI Engineering Manager Schedule (09:00 - 17:00)</h2>' +
+      '<p style="max-width:68ch">A structured operating rhythm for AI Engineering Managers balancing triage, reviews, 1-on-1s, architecture, and vendor strategy.</p>' +
+      '<div class="schedule-timeline">';
+    cc.dailySchedule.forEach(function (item) {
+      h += '<div class="sched-block">' +
+        '<div class="sched-time">' + esc(item.time) + '</div>' +
+        '<div class="sched-details">' +
+          '<h4>' + esc(item.slot) + '</h4>' +
+          '<p>' + esc(item.focus) + '</p>' +
+          '<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><b>Artifacts:</b> ' + esc(item.artifacts) + '</div>' +
+          '<ul class="sched-checklist">' +
+          (item.checklist || []).map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') +
+          '</ul>' +
+        '</div>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // Section 5: "Live Production AI Health Matrix"
+    h += '<h2>⚡ Live Production AI Health Matrix</h2>' +
+      '<p style="max-width:68ch">Real-time operational health of production foundation model and RAG systems.</p>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Health Metric</th><th>Current Performance</th><th>SLA / Target</th><th>Status</th><th>Measurement Window</th>' +
+      '</tr></thead><tbody>';
+    cc.productionHealth.forEach(function (sys) {
+      var stCls = sys.status === 'ok' ? 'healthy' : 'warn';
+      h += '<tr>' +
+        '<td><b>' + esc(sys.metric) + '</b></td>' +
+        '<td><code>' + esc(sys.current) + '</code></td>' +
+        '<td>' + esc(sys.target) + '</td>' +
+        '<td><span class="health-badge ' + stCls + '">' + esc(sys.status.toUpperCase()) + '</span></td>' +
+        '<td><small style="color:var(--muted)">' + esc(sys.window) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // Section 6: "Recent Incidents"
+    h += '<h2>🔥 Recent Incidents & Postmortem Reviews</h2>' +
+      '<div class="attention-grid">';
+    cc.recentIncidents.forEach(function (inc) {
+      h += '<div class="attention-card high">' +
+        '<div class="attention-top">' +
+          '<span class="severity-pill high">' + esc(inc.severity) + '</span>' +
+          '<small style="font:600 11px var(--mono)">' + esc(inc.id) + ' (' + esc(inc.duration) + ')</small>' +
+        '</div>' +
+        '<h4>' + esc(inc.title) + '</h4>' +
+        '<div class="attention-impact"><b>Impact:</b> ' + esc(inc.impact) + '<br><b>Root Cause:</b> ' + esc(inc.rootCause) + '</div>' +
+        '<div class="attention-action"><b>Status:</b> ' + esc(inc.status) + '<br><b>Action Item:</b> ' + esc(inc.actionItem) + '</div>' +
+        '<div style="margin-top:auto;padding-top:10px"><a class="btn" style="font-size:12px;padding:4px 10px" href="#/ops">Open SRE Postmortem →</a></div>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    h += '</div>';
     return h;
   }
 
+  /* ==========================================================================
+     PAGE 2: SERVICES CATALOGUE (#/services and #/c/:id)
+     ========================================================================== */
   function serviceCard(s) {
     return '<a class="card" style="--h:' + hueOf(s.cat) + '" href="#/s/' + s.id + '">' + miniCube(hueOf(s.cat)) + '<h3>' + esc(s.name) + '</h3><p>' + esc(s.tag) + '</p></a>';
   }
 
+  function pageServicesCatalog(selectedCat) {
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Services</div>' +
+      '<h1>AWS AI & Data Services Catalogue (' + A.services.length + ' Services)</h1>' +
+      '<p class="lede">Comprehensive catalog of AWS artificial intelligence, machine learning, data engineering, and infrastructure services with production readiness, pricing notes, and gotchas.</p>';
+
+    h += '<div class="seg" role="group" aria-label="Filter services by category" id="svcFilter" style="margin:18px 0 24px;flex-wrap:wrap">' +
+      '<button type="button" data-c="all" class="' + (!selectedCat || selectedCat === 'all' ? 'on' : '') + '">All (' + A.services.length + ')</button>' +
+      A.categories.map(function (c) {
+        return '<button type="button" data-c="' + c.id + '" class="' + (selectedCat === c.id ? 'on' : '') + '">' + esc(c.name) + ' (' + c.items.length + ')</button>';
+      }).join('') +
+      '</div>';
+
+    h += '<div id="svcGrid" class="grid">';
+    var filtered = selectedCat && selectedCat !== 'all' ? A.services.filter(function (s) { return s.cat === selectedCat; }) : A.services;
+    h += filtered.map(serviceCard).join('');
+    h += '</div>';
+
+    afterRender = function () {
+      var filterBar = $('#svcFilter');
+      if (!filterBar) return;
+      filterBar.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-c]');
+        if (!b) return;
+        var cat = b.getAttribute('data-c');
+        $$('#svcFilter button').forEach(function (x) { x.classList.toggle('on', x === b); });
+        var svcs = cat === 'all' ? A.services : A.services.filter(function (s) { return s.cat === cat; });
+        $('#svcGrid').innerHTML = svcs.map(serviceCard).join('');
+      });
+    };
+    return h;
+  }
+
   function pageCategory(id) {
     var c = catById[id]; if (!c) return notFound();
-    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Category</div><h1>' + esc(c.name) + '</h1><p class="lede">' + esc(c.short) + '</p>';
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / <a href="#/services">Services</a> / Category</div><h1>' + esc(c.name) + '</h1><p class="lede">' + esc(c.short) + '</p>';
     h += paras(c.intro);
     h += '<div class="callout"><b>Design lens</b>' + fmt(c.lens) + '</div>';
-    h += '<h2>Services</h2><div class="grid">' + c.items.map(serviceCard).join('') + '</div>';
+    h += '<h2>Services (' + c.items.length + ')</h2><div class="grid">' + c.items.map(serviceCard).join('') + '</div>';
     return h;
   }
 
@@ -229,62 +374,895 @@
     return h;
   }
 
+  /* ==========================================================================
+     PAGE 3: REFERENCE ARCHITECTURES (23 ARCHITECTURES) (#/a and #/a/:id)
+     ========================================================================== */
   function pageArchIndex() {
-    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Architectures</div><h1>Reference architectures</h1><p class="lede">Services are only useful in combination. These are the shapes that keep showing up in production AI/ML systems.</p><div class="grid">';
-    A.architectures.forEach(function (a) { h += '<a class="card" style="--h:25" href="#/a/' + a.id + '"><div class="mini">Architecture</div><h3>' + esc(a.name) + '</h3><p>' + esc(a.short) + '</p></a>'; });
-    return h + '</div>';
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Architectures</div>' +
+      '<h1>Reference Architectures (' + A.architectures.length + ' Architectures)</h1>' +
+      '<p class="lede">Production blueprints from classic RAG and Multi-Agent swarms to AI Gateways, Evals in CI/CD, and Multi-Region Resilience. Interactive step-through diagrams where every node links to its AWS service.</p>';
+
+    h += '<div class="grid" style="margin-top:24px">';
+    A.architectures.forEach(function (a) {
+      h += '<a class="card" style="--h:25" href="#/a/' + a.id + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<div class="mini">Reference Architecture</div>' +
+          '<span class="freshness-badge">AWS Verified 2026</span>' +
+        '</div>' +
+        '<h3>' + esc(a.name) + '</h3>' +
+        '<p>' + esc(a.short) + '</p>' +
+      '</a>';
+    });
+    h += '</div>';
+    return h;
   }
 
   function pageArch(id) {
     var a = archById[id]; if (!a) return notFound();
     var h = '<div class="eyebrow"><a href="#/">Atlas</a> / <a href="#/a">Architectures</a></div><h1>' + esc(a.name) + '</h1><p class="lede">' + esc(a.short) + '</p>';
+    h += '<div style="margin:8px 0 16px"><span class="freshness-badge">AWS Architecture Center Verified 2026</span></div>';
     h += '<div class="callout"><b>Use it when</b>' + fmt(a.when) + '</div>';
     h += '<h2>Walkthrough</h2><p>Click a step, or press Play. Every box is a link to its service page.</p>' + stepperHost({ flow: a.flow, steps: a.steps, hue: 25 });
     h += '<div class="lists two" style="margin-top:34px"><div class="box"><h3>Why this shape</h3>' + ul(a.why) + '</div><div class="box warn"><h3>How it fails</h3>' + ul(a.fails) + '</div></div>';
-    var used = {}; a.flow.forEach(function (f) { if (f.s) used[f.s] = 1; });
+    var used = {}; (a.flow || []).forEach(function (f) { if (f.s) used[f.s] = 1; });
     var ids = Object.keys(used);
-    if (ids.length) h += '<h2>Services involved</h2><div class="pairs">' + ids.map(function (p) { return '<a href="#/s/' + p + '">' + esc(byId[p].name) + '</a>'; }).join('') + '</div>';
+    if (ids.length) h += '<h2>Services involved</h2><div class="pairs">' + ids.map(function (p) { return '<a href="#/s/' + p + '">' + esc(byId[p] ? byId[p].name : p) + '</a>'; }).join('') + '</div>';
     return h;
   }
 
-  /* ---------- decisions & leader tools ---------- */
+  /* ==========================================================================
+     PAGE 4: AI PROJECT LIFECYCLE OPERATING SYSTEM (#/delivery)
+     ========================================================================== */
+  function pageDelivery() {
+    var del = A.delivery;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Delivery Lifecycle</div>' +
+      '<h1>AI Project Delivery Lifecycle Centre (12 Phases)</h1>' +
+      '<p class="lede">A standard operating framework managing AI and agentic initiatives from problem discovery through architecture review, MVP, production quality gates, and ongoing optimization.</p>';
+
+    // 12-Phase Stepper Tracker
+    h += '<h2>The 12 AI Project Delivery Phases</h2>' +
+      '<div class="phases-tracker" id="phaseChips">';
+    del.phases.forEach(function (ph, idx) {
+      h += '<div class="phase-chip ' + (idx === 0 ? 'active' : '') + '" data-p="' + idx + '">' +
+        '<span class="pnum">Phase ' + (idx + 1) + '</span>' +
+        '<span class="pname">' + esc(ph.name) + '</span>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // Phase Detail Box
+    var p0 = del.phases[0];
+    h += '<div class="box" id="phaseDetail" style="margin-bottom:32px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<h3 id="phTitle" style="margin:0">' + esc(p0.name) + '</h3>' +
+        '<span class="chip" id="phTag" style="--h:212">' + esc(p0.tag) + '</span>' +
+      '</div>' +
+      '<p id="phSummary" style="margin:10px 0">' + fmt(p0.summary) + '</p>' +
+      '<div class="lists two" style="margin-top:14px">' +
+        '<div><h4>Engineering Manager Focus</h4><p id="phFocus">' + fmt(p0.emFocus) + '</p></div>' +
+        '<div><h4>Mandatory Exit Gate</h4><p id="phGate"><b>' + fmt(p0.exitGate) + '</b></p></div>' +
+      '</div>' +
+    '</div>';
+
+    // Portfolio Dashboard
+    h += '<h2>Enterprise AI Project Portfolio (12 Initiatives)</h2>' +
+      '<p style="max-width:68ch">Active cross-squad AI portfolio health, stage gates, spend vs budget, technical blockers, and required executive actions.</p>';
+
+    h += '<div class="seg" role="group" aria-label="Filter portfolio" id="portFilter" style="margin:14px 0">' +
+      '<button type="button" data-f="all" class="on">All Projects (' + del.projects.length + ')</button>' +
+      '<button type="button" data-f="On track">On Track</button>' +
+      '<button type="button" data-f="At risk">At Risk</button>' +
+      '<button type="button" data-f="Critical">Critical</button>' +
+      '</div>';
+
+    h += '<div class="projects-table-wrap"><table class="matrix-table" id="portTable"><thead><tr>' +
+      '<th>Project Name</th><th>Squad / Leads</th><th>Stage</th><th>Health</th><th>Budget vs Spend</th><th>Primary KPIs</th><th>Risks / Blockers</th><th>Next EM Action</th>' +
+      '</tr></thead><tbody>';
+
+    del.projects.forEach(function (pj) {
+      var hCls = pj.health === 'On track' ? 'healthy' : (pj.health === 'At risk' ? 'warn' : 'critical');
+      h += '<tr data-health="' + esc(pj.health) + '">' +
+        '<td><b>' + esc(pj.name) + '</b><br><small style="color:var(--muted)">' + esc(pj.id) + '</small></td>' +
+        '<td><small><b>PM:</b> ' + esc(pj.pm) + '<br><b>Tech:</b> ' + esc(pj.techLead) + '</small></td>' +
+        '<td><span class="chip" style="--h:25">' + esc(pj.stageName) + '</span></td>' +
+        '<td><span class="health-badge ' + hCls + '">' + esc(pj.health) + '</span></td>' +
+        '<td><b>' + esc(pj.spend) + '</b> / ' + esc(pj.budget) + '</td>' +
+        '<td><small><b>AI:</b> ' + esc(pj.aiKPI) + '<br><b>Biz:</b> ' + esc(pj.businessKPI) + '</small></td>' +
+        '<td><small style="color:var(--warn)">' + esc(pj.risks) + '</small></td>' +
+        '<td><small><b>Action:</b> ' + esc(pj.nextAction) + '<br><b>Decision:</b> ' + esc(pj.decisionRequired) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    afterRender = function () {
+      $$('#phaseChips .phase-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          $$('#phaseChips .phase-chip').forEach(function (c) { c.classList.remove('active'); });
+          this.classList.add('active');
+          var idx = +this.getAttribute('data-p');
+          var p = del.phases[idx];
+          $('#phTitle').textContent = p.name;
+          $('#phTag').textContent = p.tag;
+          $('#phSummary').innerHTML = fmt(p.summary);
+          $('#phFocus').innerHTML = fmt(p.emFocus);
+          $('#phGate').innerHTML = '<b>' + fmt(p.exitGate) + '</b>';
+        });
+      });
+
+      var portFilter = $('#portFilter');
+      if (portFilter) {
+        portFilter.addEventListener('click', function (e) {
+          var b = e.target.closest('button[data-f]');
+          if (!b) return;
+          var f = b.getAttribute('data-f');
+          $$('#portFilter button').forEach(function (x) { x.classList.toggle('on', x === b); });
+          $$('#portTable tbody tr').forEach(function (row) {
+            row.hidden = f !== 'all' && row.getAttribute('data-health') !== f;
+          });
+        });
+      }
+    };
+
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 5: ENTERPRISE AI ARCHITECTURE REVIEW SYSTEM (#/arch-review)
+     ========================================================================== */
+  function pageArchReview() {
+    var ar = A.archReview;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Architecture Review</div>' +
+      '<h1>Enterprise AI Architecture Review System & ARB Scoring</h1>' +
+      '<p class="lede">Rigorous 12-dimension architecture governance for multi-agent, RAG, and foundation model systems on AWS. Likelihood × Impact scoring, systemic risk view across squads, and copyable ARB submission artifact.</p>';
+
+    // Interactive ARB Risk Calculator
+    h += '<h2>Interactive ARB Risk Calculator (Likelihood × Impact)</h2>' +
+      '<div class="risk-calc-box">' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">' +
+          '<label class="num"><span class="nl2">Failure Likelihood</span>' +
+            '<select id="riskLikelihood" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line2);background:var(--paper);font:inherit">' +
+              ar.riskCalculator.likelihoodLevels.map(function (l) { return '<option value="' + l.level + '">' + l.level + ' - ' + esc(l.label) + ' (' + esc(l.desc) + ')</option>'; }).join('') +
+            '</select>' +
+          '</label>' +
+          '<label class="num"><span class="nl2">Impact Severity</span>' +
+            '<select id="riskImpact" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line2);background:var(--paper);font:inherit">' +
+              ar.riskCalculator.impactLevels.map(function (l) { return '<option value="' + l.level + '">' + l.level + ' - ' + esc(l.label) + ' (' + esc(l.desc) + ')</option>'; }).join('') +
+            '</select>' +
+          '</label>' +
+        '</div>' +
+        '<div class="risk-score-display">' +
+          '<div class="risk-dial low" id="riskDial">1</div>' +
+          '<div>' +
+            '<h4 id="riskScoreLabel" style="margin:0 0 4px">Score 1: Low Risk</h4>' +
+            '<p id="riskScoreDesc" style="margin:0;font-size:13px;color:var(--muted)">Standard review. Proceed with automated evaluations in CI/CD pipeline.</p>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    // 12 Architecture Review Dimensions
+    h += '<h2>The 12 Architecture Review Dimensions</h2>' +
+      '<div class="grid" style="margin:16px 0">';
+    ar.dimensions.forEach(function (dim) {
+      h += '<div class="box" style="display:flex;flex-direction:column;gap:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span class="chip" style="--h:25">Dim ' + dim.num + ' · Weight ' + dim.weight + '</span>' +
+          '<span class="freshness-badge">ARB Gate</span>' +
+        '</div>' +
+        '<h3>' + esc(dim.title) + '</h3>' +
+        '<p style="font-size:13px;color:var(--muted)">' + esc(dim.description) + '</p>' +
+        '<div style="margin-top:auto">' +
+          '<h4>Key Review Questions:</h4>' + ul(dim.keyQuestions.slice(0, 2)) +
+          '<h4 style="color:var(--warn);margin-top:8px">Red Flags:</h4>' + ul(dim.redFlags.slice(0, 1)) +
+        '</div>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // Systemic Risk View Across Squads
+    h += '<h2>Systemic Risk View Across Engineering Squads</h2>' +
+      '<p style="max-width:68ch">Cross-squad architectural risk assessments, recurring anti-patterns, and systemic vulnerabilities across the 5 engineering squads.</p>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Engineering Squad</th><th>Initiative</th><th>ARB Score</th><th>Risk Level</th><th>Primary Finding</th><th>Top Architectural Risk</th>' +
+      '</tr></thead><tbody>';
+    ar.systemicRiskView.forEach(function (v) {
+      var rCls = v.riskLevel === 'Low' ? 'healthy' : (v.riskLevel === 'Medium' ? 'warn' : 'critical');
+      h += '<tr>' +
+        '<td><b>' + esc(v.squad) + '</b></td>' +
+        '<td>' + esc(v.project) + '</td>' +
+        '<td><b>' + esc(v.score) + '/100</b></td>' +
+        '<td><span class="health-badge ' + rCls + '">' + esc(v.riskLevel) + '</span></td>' +
+        '<td><small>' + esc(v.primaryFinding) + '</small></td>' +
+        '<td><small style="color:var(--warn)">' + esc(v.topRisk) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // ARB Document Template
+    h += '<h2>Copyable ARB Architecture Review Submission Document</h2>' +
+      '<div style="margin:12px 0;display:flex;justify-content:flex-end">' +
+        '<button class="copy-btn" type="button" id="copyArbDoc">Copy ARB Template (Markdown)</button>' +
+      '</div>' +
+      '<pre class="adr" tabindex="0">' + esc(ar.documentTemplate) + '</pre>';
+
+    afterRender = function () {
+      var lSel = $('#riskLikelihood'), iSel = $('#riskImpact'), dial = $('#riskDial'), lbl = $('#riskScoreLabel'), dsc = $('#riskScoreDesc');
+      function updateRisk() {
+        var L = +lSel.value, I = +iSel.value, score = L * I;
+        dial.textContent = score;
+        dial.className = 'risk-dial ' + (score <= 4 ? 'low' : (score <= 8 ? 'medium' : (score <= 12 ? 'high' : 'critical')));
+        if (score <= 4) {
+          lbl.textContent = 'Score ' + score + ': Low Risk';
+          dsc.textContent = 'Standard review. Proceed with automated evaluations in CI/CD pipeline.';
+        } else if (score <= 8) {
+          lbl.textContent = 'Score ' + score + ': Medium Risk';
+          dsc.textContent = 'Tech Lead review required. Automated security scan and prompt regression harness mandatory.';
+        } else if (score <= 12) {
+          lbl.textContent = 'Score ' + score + ': High Risk';
+          dsc.textContent = 'Formal ARB approval required. Principal Engineer and Security Lead must co-sign decision record.';
+        } else {
+          lbl.textContent = 'Score ' + score + ': Critical Risk';
+          dsc.textContent = 'Hard blocker. Architecture prohibited from production deployment without structural redesign.';
+        }
+      }
+      if (lSel && iSel) {
+        lSel.addEventListener('change', updateRisk);
+        iSel.addEventListener('change', updateRisk);
+      }
+      var copyBtn = $('#copyArbDoc');
+      if (copyBtn) copyBtn.addEventListener('click', function () { copyText(ar.documentTemplate, this); });
+    };
+
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 6: AWS AI SERVICE SELECTION MATRIX (#/selector)
+     ========================================================================== */
+  function pageSelector() {
+    var sel = A.selector;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Service Selector</div>' +
+      '<h1>AWS AI Service Selection Matrix (14 Enterprise Workloads)</h1>' +
+      '<p class="lede">Comprehensive selection guidance for 14 enterprise AI workloads: recommended AWS service, viable alternatives, trade-offs, and explicit reasons why alternatives were rejected.</p>';
+
+    h += '<div class="selector-grid">';
+    sel.workloads.forEach(function (wl) {
+      h += '<div class="selector-card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span class="chip" style="--h:212">' + esc(wl.workloadProfile) + '</span>' +
+          '<small style="font:600 11px var(--mono);color:var(--muted)">' + esc(wl.id) + '</small>' +
+        '</div>' +
+        '<h3 style="margin:10px 0 6px">' + esc(wl.title) + '</h3>' +
+        '<p style="font-size:13px;color:var(--muted);margin-bottom:12px"><b>Key Decision:</b> ' + esc(wl.keyDecision) + '</p>' +
+
+        '<div class="selector-rec">' +
+          '<h4 style="margin:0 0 4px;color:var(--ok)">✓ Recommended: ' + esc(wl.recommended.service) + '</h4>' +
+          '<p style="margin:0 0 6px;font-size:13px">' + esc(wl.recommended.why) + '</p>' +
+          '<div style="font-size:12px;color:var(--muted)"><b>Strengths:</b> ' + (wl.recommended.strengths || []).join(' · ') + '</div>' +
+        '</div>' +
+
+        '<div style="margin-top:12px">' +
+          '<h4 style="margin:0 0 8px;font-size:13px">Alternatives Considered & Rejection Reasons:</h4>' +
+          (wl.alternatives || []).map(function (alt) {
+            return '<div class="selector-alt">' +
+              '<b>' + esc(alt.service) + '</b><br>' +
+              '<span style="font-size:12px;color:var(--muted)">Trade-offs: ' + esc(alt.tradeoffs) + '</span><br>' +
+              '<span style="font-size:12px;color:var(--warn)"><b>Why Rejected:</b> ' + esc(alt.whyRejected) + '</span>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+
+        '<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line2);display:flex;justify-content:space-between;font:600 11px var(--mono);color:var(--muted)">' +
+          '<span>Latency: ' + esc(wl.criteria.latency) + '</span>' +
+          '<span>Cost: ' + esc(wl.criteria.costTier) + '</span>' +
+          '<span>Complexity: ' + esc(wl.criteria.complexity) + '</span>' +
+        '</div>' +
+      '</div>';
+    });
+    h += '</div>';
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 7: MODEL PORTFOLIO & LIFECYCLE MANAGEMENT (#/models)
+     ========================================================================== */
+  function pageModels() {
+    var md = A.models;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Model Portfolio</div>' +
+      '<h1>Enterprise Model Registry & Lifecycle Management (16 Models)</h1>' +
+      '<p class="lede">Central governance, performance benchmarks, token unit economics, and promotion policies for foundation models across Amazon Bedrock and SageMaker.</p>';
+
+    // Lifecycle Stepper
+    h += '<h2>6-Stage Model Lifecycle Workflow</h2>' +
+      '<div class="grid" style="margin:16px 0">';
+    md.lifecycle.forEach(function (st) {
+      h += '<div class="box">' +
+        '<h4>' + esc(st.stage) + '</h4>' +
+        '<p style="font-size:13px;color:var(--muted)">' + esc(st.activities) + '</p>' +
+        '<div style="font-size:12px;color:var(--ok)"><b>Exit Gate:</b> ' + esc(st.exitGate) + '</div>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // Model Registry Table
+    h += '<h2>Active Model Portfolio Registry (' + md.registry.length + ' Models)</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Model Name & ID</th><th>Provider</th><th>Category</th><th>Status</th><th>P50 / P95 Latency</th><th>Cost (Input / Output 1M)</th><th>Context</th><th>Tools / Multi</th><th>Approved Data</th><th>Owner Squad</th>' +
+      '</tr></thead><tbody>';
+
+    md.registry.forEach(function (m) {
+      var stCls = m.status === 'approved' ? 'healthy' : (m.status === 'pilot' ? 'warn' : 'critical');
+      h += '<tr>' +
+        '<td><b>' + esc(m.name) + '</b><br><small style="color:var(--muted)">' + esc(m.id) + '</small></td>' +
+        '<td><small>' + esc(m.provider) + '</small></td>' +
+        '<td><small>' + esc(m.category) + '</small></td>' +
+        '<td><span class="health-badge ' + stCls + '">' + esc(m.status) + '</span></td>' +
+        '<td><code>' + esc(m.latencyP50) + ' / ' + esc(m.latencyP95) + '</code></td>' +
+        '<td><code>' + esc(m.costInput1M) + ' / ' + esc(m.costOutput1M) + '</code></td>' +
+        '<td><small>' + esc(m.contextWindow) + '</small></td>' +
+        '<td><small>' + (m.toolCalling ? 'Tools ✓' : 'No tools') + (m.multimodal ? ' · Vision ✓' : '') + '</small></td>' +
+        '<td><small>' + (m.dataClassApproved || []).join(', ') + '</small></td>' +
+        '<td><small>' + esc(m.ownerTeam) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // Promotion Policy
+    h += '<h2>Model Promotion Policies (Sandbox → Staging → Production)</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Promotion Tier</th><th>Governance Status</th><th>Allowed AWS Environments</th><th>Data Access Policy</th><th>Mandatory Sign-off</th>' +
+      '</tr></thead><tbody>';
+    Object.keys(md.promotionPolicy).forEach(function (k) {
+      var pol = md.promotionPolicy[k];
+      h += '<tr>' +
+        '<td><b>' + esc(k.toUpperCase()) + '</b></td>' +
+        '<td><span class="chip" style="--h:25">' + esc(pol.status) + '</span></td>' +
+        '<td><small>' + esc(pol.allowedEnvironments.join(', ')) + '</small></td>' +
+        '<td><small>' + esc(pol.dataAccess) + '</small></td>' +
+        '<td><small style="color:var(--ok)">' + esc(pol.approvalRequired) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // Migration Playbook
+    h += '<h2>10-Point Model Deprecation & Migration Playbook</h2>' +
+      '<div class="box" style="margin:16px 0">' +
+        '<ol style="padding-left:20px;line-height:1.6">' +
+        md.migrationPlaybook.map(function (step) {
+          return '<li style="margin:6px 0"><b>' + esc(step.name) + ':</b> ' + esc(step.action) + '<br><small style="color:var(--ok)"><b>Validation:</b> ' + esc(step.validation) + '</small></li>';
+        }).join('') +
+        '</ol>' +
+      '</div>';
+
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 8: AI EVALUATION & QUALITY ENGINEERING CENTRE (#/eval)
+     ========================================================================== */
+  function pageEval() {
+    var ev = A.eval;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Quality & Evals</div>' +
+      '<h1>AI Evaluation & Quality Engineering Centre</h1>' +
+      '<p class="lede">Comprehensive quality frameworks, 28-metric dictionary, automated release gates, and golden dataset governance for generative AI and agentic systems on AWS.</p>';
+
+    // 13 Evaluation Layers
+    h += '<h2>The 13 AI Evaluation Layers</h2>' +
+      '<div class="grid" style="margin:16px 0">';
+    ev.layers.forEach(function (L, idx) {
+      h += '<div class="box">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span class="chip" style="--h:25">Layer ' + (idx + 1) + '</span>' +
+          '<small style="font:600 11px var(--mono);color:var(--muted)">' + esc(L.frequency) + '</small>' +
+        '</div>' +
+        '<h3>' + esc(L.name) + '</h3>' +
+        '<p style="font-size:13px;color:var(--muted)">' + esc(L.focus) + '</p>' +
+        '<div style="font-size:12px;color:var(--ink)"><b>Tooling:</b> ' + fmt(L.tooling) + '</div>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // 28 Metrics Dictionary
+    h += '<h2>Production AI Metrics Dictionary (' + ev.metricsDictionary.length + ' Metrics)</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Category</th><th>Metric Name</th><th>Measurement Formula</th><th>Target Threshold</th><th>Engineering Significance</th>' +
+      '</tr></thead><tbody>';
+    ev.metricsDictionary.forEach(function (m) {
+      h += '<tr>' +
+        '<td><span class="chip" style="--h:212">' + esc(m.category) + '</span></td>' +
+        '<td><b>' + esc(m.metric) + '</b></td>' +
+        '<td><code>' + esc(m.formula) + '</code></td>' +
+        '<td><b>' + esc(m.target) + '</b></td>' +
+        '<td><small>' + esc(m.description) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // 12 Production Release Gates
+    h += '<h2>Mandatory Production Release Quality Gates (12 Gates)</h2>' +
+      '<p style="max-width:68ch">All 12 gates must pass with written proof before any generative AI or agentic workload can be promoted to production.</p>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Gate ID</th><th>Quality Gate</th><th>Strict Requirement</th><th>Enforcement</th>' +
+      '</tr></thead><tbody>';
+    ev.productionReleaseGate.forEach(function (g) {
+      h += '<tr>' +
+        '<td><code>' + esc(g.id) + '</code></td>' +
+        '<td><b>' + esc(g.item) + '</b></td>' +
+        '<td>' + esc(g.requirement) + '</td>' +
+        '<td><span class="severity-pill critical">MANDATORY</span></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // Golden Dataset Design Guide
+    h += '<h2>Golden Dataset Engineering Guide</h2>' +
+      '<div class="grid" style="margin:16px 0">';
+    ev.goldenDatasetDesign.steps.forEach(function (st) {
+      h += '<div class="box">' +
+        '<h4>Step ' + st.step + ': ' + esc(st.title) + '</h4>' +
+        '<p style="font-size:13px;color:var(--muted)">' + esc(st.desc) + '</p>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 9: AI FINOPS & UNIT ECONOMICS (#/finops)
+     ========================================================================== */
+  function pageFinOps() {
+    var fo = A.finops;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / FinOps & Budget</div>' +
+      '<h1>AI FinOps, Unit Economics & Budget Governance</h1>' +
+      '<p class="lede">Unit cost modeling, capacity planning, cost reduction levers, and financial governance for production AI workloads on AWS.</p>';
+
+    // 4 EM Metrics
+    h += '<h2>The 4 Core AI Engineering Manager FinOps Metrics</h2>' +
+      '<div class="grid" style="margin:16px 0">';
+    fo.emMetrics.forEach(function (m) {
+      h += '<div class="box">' +
+        '<small style="font:600 11px var(--mono);text-transform:uppercase;color:var(--accent)">FinOps KPI</small>' +
+        '<h3>' + esc(m.title) + '</h3>' +
+        '<div style="font:700 16px var(--mono);margin:4px 0">' + esc(m.target) + '</div>' +
+        '<p style="font-size:13px;color:var(--muted)"><b>Formula:</b> <code>' + esc(m.formula) + '</code></p>' +
+        '<p style="font-size:13px">' + esc(m.why) + '</p>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // 5 Enterprise Deployment Scenarios
+    h += '<h2>Enterprise AI Cost Profiles (5 Production Scenarios)</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Workload Scenario</th><th>Monthly Volume</th><th>Monthly Spend</th><th>Cost Per Task</th><th>AWS Architecture Stack</th>' +
+      '</tr></thead><tbody>';
+    fo.scenarios.forEach(function (sc) {
+      h += '<tr>' +
+        '<td><b>' + esc(sc.name) + '</b></td>' +
+        '<td>' + esc(sc.volume) + '</td>' +
+        '<td><b>' + esc(sc.monthlySpend) + '</b></td>' +
+        '<td><code>' + esc(sc.costPerTask) + '</code></td>' +
+        '<td><small>' + esc(sc.stack) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // 17 Cost Categories Breakdown
+    h += '<h2>The 17 Cloud Cost Tiers & Drivers</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Tier ID</th><th>Cost Category</th><th>AWS Service</th><th>Unit of Measure</th><th>EM Optimization Lever</th>' +
+      '</tr></thead><tbody>';
+    fo.costCategories.forEach(function (cc) {
+      h += '<tr>' +
+        '<td><code>' + esc(cc.id) + '</code></td>' +
+        '<td><b>' + esc(cc.name) + '</b></td>' +
+        '<td><small>' + esc(cc.svc) + '</small></td>' +
+        '<td><code>' + esc(cc.unit) + '</code></td>' +
+        '<td><small style="color:var(--ok)">' + esc(cc.lever) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // 17 Cost Levers
+    h += '<h2>The 17 Cost Reduction Levers</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Optimization Lever</th><th>Savings Potential</th><th>Mechanism & AWS Implementation</th>' +
+      '</tr></thead><tbody>';
+    fo.costLevers.forEach(function (lv) {
+      h += '<tr>' +
+        '<td><b>' + esc(lv.lever) + '</b></td>' +
+        '<td><span class="health-badge healthy">' + esc(lv.savings) + '</span></td>' +
+        '<td><small>' + esc(lv.mechanism) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // Budget Approval Gates
+    h += '<h2>Budget Governance & Approval Gates</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Lifecycle Stage</th><th>Mandatory Financial Requirement</th>' +
+      '</tr></thead><tbody>';
+    fo.approvalGates.forEach(function (gt) {
+      h += '<tr>' +
+        '<td><b>' + esc(gt.stage) + '</b></td>' +
+        '<td><small>' + esc(gt.requirement) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 10: PRODUCTION OPERATIONS & SRE (#/ops)
+     ========================================================================== */
+  function pageOperations() {
+    var op = A.operations, sre = A.sre;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Operations & SRE</div>' +
+      '<h1>Production AI Operations & SRE Command Centre</h1>' +
+      '<p class="lede">Site Reliability Engineering for non-deterministic AI systems: 12 reliability principles, SLO error budgets, 14 chaos engineering drills, 10-widget CloudWatch dashboards, and incident runbooks.</p>';
+
+    // 12 Reliability Principles
+    h += '<h2>12 Reliability Principles for Non-Deterministic AI</h2>' +
+      '<div class="grid" style="margin:16px 0">';
+    sre.principles.forEach(function (pr, idx) {
+      h += '<div class="box">' +
+        '<h4>' + (idx + 1) + '. ' + esc(pr.title) + '</h4>' +
+        '<p style="font-size:13px;color:var(--muted)">' + esc(pr.desc) + '</p>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // SLO Error Budget Scorecard
+    h += '<h2>Production SLO & Error Budget Scorecards</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Service Level Indicator (SLI)</th><th>SLO Target</th><th>Measurement Method</th><th>Allowed Error Budget</th>' +
+      '</tr></thead><tbody>';
+    sre.slos.forEach(function (sl) {
+      h += '<tr>' +
+        '<td><b>' + esc(sl.sli) + '</b></td>' +
+        '<td><span class="health-badge healthy">' + esc(sl.slo) + '</span></td>' +
+        '<td><small>' + esc(sl.measurement) + '</small></td>' +
+        '<td><small style="color:var(--warn)">' + esc(sl.errorBudget) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // 14 SRE Chaos Engineering Drills
+    h += '<h2>14 AI SRE Chaos Engineering Drills</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Drill ID</th><th>Scenario Name</th><th>Simulated Failure Injection</th><th>Expected System Behavior</th><th>Verification Criteria</th>' +
+      '</tr></thead><tbody>';
+    sre.chaosDrills.forEach(function (dr) {
+      h += '<tr>' +
+        '<td><code>' + esc(dr.id) + '</code></td>' +
+        '<td><b>' + esc(dr.title) + '</b></td>' +
+        '<td><small>' + esc(dr.scenario) + '</small></td>' +
+        '<td><small style="color:var(--ok)">' + esc(dr.expectedBehavior) + '</small></td>' +
+        '<td><small><b>' + esc(dr.verification) + '</b></small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // Dashboard Template
+    h += '<h2>' + esc(op.dashboardTemplate.title) + '</h2>' +
+      '<p class="fine">' + esc(op.dashboardTemplate.subtitle) + '</p>' +
+      '<div class="dash-grid">';
+    op.dashboardTemplate.widgets.forEach(function (w) {
+      h += '<div class="dash-card">' +
+        '<div class="dash-top">' +
+          '<h4>' + esc(w.title) + '</h4>' +
+          '<span class="status-pill ' + (w.status === 'ok' ? 'ok' : 'warn') + '">● ' + esc(w.status) + '</span>' +
+        '</div>' +
+        '<div class="dash-metric">' + esc(w.metric) + '</div>' +
+        '<div class="dash-sub">' + esc(w.sub) + '</div>' +
+        '<div class="dash-target">' + esc(w.target) + '</div>' +
+        '<div style="margin-top:auto;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
+          '<button class="btn-sm" type="button" data-toggle-kql="' + w.id + '">View Query ⤢</button>' +
+          '<button class="btn-sm" type="button" data-copy="' + esc(w.kusto || w.query || '') + '">Copy Query</button>' +
+        '</div>' +
+        '<div class="kql-box" id="kql-' + w.id + '" hidden>' + esc(w.kusto || w.query || '') + '</div>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // Production Runbooks
+    h += '<h2>Production SRE Incident Runbooks</h2>' +
+      '<p style="max-width:62ch">Step-by-step remediation procedures for on-call engineers when anomalies trigger high-severity alerts.</p>';
+    op.runbooks.forEach(function (rb) {
+      var sevColor = rb.severity.indexOf('P1') > -1 ? 'var(--warn)' : 'var(--accent)';
+      h += '<div class="box" style="margin:16px 0;border-left:5px solid ' + sevColor + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">' +
+          '<h3>' + esc(rb.title) + '</h3>' +
+          '<span class="door ' + (rb.severity.indexOf('P1') > -1 ? 'one-way' : 'two-way') + '">' + esc(rb.severity) + '</span>' +
+        '</div>' +
+        '<p style="margin:8px 0;color:var(--muted)"><b>Trigger Condition:</b> ' + fmt(rb.trigger) + '</p>' +
+        '<h4>Remediation Steps:</h4>' +
+        '<ol style="margin:8px 0;padding-left:22px">' +
+        rb.steps.map(function (st) { return '<li style="margin:6px 0">' + fmt(st) + '</li>'; }).join('') +
+        '</ol>' +
+      '</div>';
+    });
+
+    // Postmortem Template
+    var pm = op.postmortemTemplate;
+    h += '<h2>' + esc(pm.title) + '</h2>' +
+      '<p>' + fmt(pm.intro) + '</p>' +
+      '<div style="margin:12px 0 8px;display:flex;justify-content:flex-end">' +
+        '<button class="copy-btn" type="button" id="copyPostmortem">Copy Postmortem Template</button>' +
+      '</div>' +
+      '<pre class="adr" tabindex="0">' + esc(pm.templateMarkdown) + '</pre>';
+
+    afterRender = function () {
+      $$('button[data-toggle-kql]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-toggle-kql');
+          var target = $('#kql-' + id);
+          if (target) {
+            target.hidden = !target.hidden;
+            this.textContent = target.hidden ? 'View Query ⤢' : 'Hide Query ⤹';
+          }
+        });
+      });
+      $$('button[data-copy]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          copyText(this.getAttribute('data-copy'), this);
+        });
+      });
+      var copyPmBtn = $('#copyPostmortem');
+      if (copyPmBtn) copyPmBtn.addEventListener('click', function () { copyText(pm.templateMarkdown, this); });
+    };
+
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 11: SECURITY, GOVERNANCE & COMPLIANCE (#/gov)
+     ========================================================================== */
+  function pageGovernance() {
+    var g = A.governance, comp = A.compliance;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Security & Governance</div>' +
+      '<h1>Enterprise AI Security, Governance & Regulatory Compliance</h1>' +
+      '<p class="lede">AWS Control Tower multi-account landing zones, zero-trust network boundaries, regulatory crosswalks (NIST AI RMF, ISO 42001, EU AI Act, India DPDP Act), and 12 enterprise compliance controls.</p>';
+
+    // Regulatory Frameworks Crosswalk
+    h += '<h2>Global AI Regulatory Frameworks Crosswalk</h2>' +
+      '<div class="grid" style="margin:16px 0">';
+    comp.frameworks.forEach(function (fw) {
+      h += '<div class="box">' +
+        '<small style="font:600 11px var(--mono);color:var(--accent)">' + esc(fw.scope) + '</small>' +
+        '<h3>' + esc(fw.name) + '</h3>' +
+        '<h4>Key Mandates:</h4>' + ul(fw.pillars) +
+        '<div style="margin-top:8px;font-size:12px;color:var(--ok)"><b>AWS Mapping:</b> ' + esc(fw.awsMapping) + '</div>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // 12 Enterprise Compliance Controls Matrix
+    h += '<h2>The 12 Enterprise Compliance Controls Matrix</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Compliance Requirement</th><th>Control Description</th><th>AWS Architecture Implementation</th><th>Audit Evidence Required</th>' +
+      '</tr></thead><tbody>';
+    comp.controlsMatrix.forEach(function (cm) {
+      h += '<tr>' +
+        '<td><b>' + esc(cm.req) + '</b></td>' +
+        '<td><small>' + esc(cm.control) + '</small></td>' +
+        '<td><small>' + fmt(cm.awsImpl) + '</small></td>' +
+        '<td><small style="color:var(--muted)">' + esc(cm.evidence) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // Landing Zone & Security Framework
+    h += '<h2>' + esc(g.landingZones.title) + '</h2>' +
+      '<p>' + fmt(g.landingZones.intro) + '</p>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Management Group Level</th><th>Target Scope</th><th>Architecture Purpose</th></tr></thead><tbody>' +
+      g.landingZones.hierarchy.map(function (row) {
+        return '<tr><td><b>' + esc(row.level) + '</b></td><td>' + esc(row.scope) + '</td><td>' + fmt(row.purpose) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+
+    // Tenancy Models
+    h += '<h2>' + esc(g.tenancyModels.title) + '</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Isolation Model</th><th>Best Fit</th><th>Mechanism</th><th>Pros</th><th>Cons</th></tr></thead><tbody>' +
+      g.tenancyModels.models.map(function (m) {
+        return '<tr><td><b>' + esc(m.name) + '</b></td><td>' + fmt(m.fit) + '</td><td>' + fmt(m.mechanism) + '</td><td><span style="color:var(--ok)">' + fmt(m.pros) + '</span></td><td><span style="color:var(--warn)">' + fmt(m.cons) + '</span></td></tr>';
+      }).join('') + '</tbody></table></div>';
+
+    // SCP Policies
+    h += '<h2>' + esc(g.policyInitiatives.title) + '</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Policy / SCP Name</th><th>Enforcement Effect</th><th>Compliance & Security Purpose</th></tr></thead><tbody>' +
+      g.policyInitiatives.policies.map(function (pol) {
+        var effectColor = pol.effect === 'Deny' ? 'var(--warn)' : 'var(--accent)';
+        return '<tr><td><b>' + esc(pol.name) + '</b></td><td><code style="color:' + effectColor + '">' + esc(pol.effect) + '</code></td><td>' + fmt(pol.purpose) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 12: LEADERSHIP, WORKFORCE & TECHNICAL DEBT (#/leadership)
+     ========================================================================== */
+  function pageLeadership() {
+    var wf = A.workforce;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Leadership</div>' +
+      '<h1>AI Engineering Leadership, Workforce Matrix & Technical Debt</h1>' +
+      '<p class="lede">Competency ladders from Junior to Principal Engineer, engineering productivity metrics, 13 categories of AI technical debt, and a 5-level organizational maturity model.</p>';
+
+    // 10-Domain Competency Matrix
+    h += '<h2>10-Domain AI Engineering Competency Matrix</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Competency Domain</th><th>Junior Engineer</th><th>Mid-Level Engineer</th><th>Senior Engineer</th><th>Principal / Lead</th>' +
+      '</tr></thead><tbody>';
+    wf.competencies.forEach(function (c) {
+      h += '<tr>' +
+        '<td><b>' + esc(c.domain) + '</b></td>' +
+        '<td><small>' + esc(c.junior) + '</small></td>' +
+        '<td><small>' + esc(c.mid) + '</small></td>' +
+        '<td><small>' + esc(c.senior) + '</small></td>' +
+        '<td><small style="color:var(--accent)">' + esc(c.principal) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // Productivity Metrics
+    h += '<h2>AI Engineering Team Productivity Metrics</h2>' +
+      '<div class="grid" style="margin:16px 0">';
+    wf.productivityMetrics.forEach(function (pm) {
+      h += '<div class="box">' +
+        '<h3>' + esc(pm.metric) + '</h3>' +
+        '<div style="font:700 16px var(--mono);margin:4px 0">' + esc(pm.target) + ' (' + esc(pm.unit) + ')</div>' +
+        '<p style="font-size:13px;color:var(--muted)">' + esc(pm.desc) + '</p>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    // 13 Technical Debt Categories
+    h += '<h2>13 Categories of AI Technical Debt & Remediation</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Debt Category</th><th>Severity</th><th>Symptoms</th><th>Remediation Strategy</th>' +
+      '</tr></thead><tbody>';
+    wf.technicalDebt.forEach(function (td) {
+      h += '<tr>' +
+        '<td><b>' + esc(td.category) + '</b></td>' +
+        '<td><span class="severity-pill ' + (td.severity === 'High' ? 'critical' : 'medium') + '">' + esc(td.severity) + '</span></td>' +
+        '<td><small style="color:var(--warn)">' + esc(td.symptom) + '</small></td>' +
+        '<td><small style="color:var(--ok)">' + esc(td.remediation) + '</small></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // 5-Level Maturity Model
+    h += '<h2>5-Level Organizational AI Maturity Ladder</h2>' +
+      '<div class="grid" style="margin:16px 0">';
+    wf.maturityModel.forEach(function (ml) {
+      h += '<div class="box">' +
+        '<span class="chip" style="--h:25">Level ' + esc(ml.level) + '</span>' +
+        '<h3>' + esc(ml.name) + '</h3>' +
+        '<p style="font-size:13px;color:var(--muted)">' + esc(ml.desc) + '</p>' +
+        '<div style="font-size:12px;color:var(--ok);margin-top:8px"><b>Next Step to Advance:</b> ' + esc(ml.nextStep) + '</div>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 13: MANAGER TOOLKIT & COPYABLE TEMPLATES (22 TEMPLATES) (#/toolkit)
+     ========================================================================== */
+  function pageToolkit() {
+    var tk = A.toolkit;
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Manager Toolkit</div>' +
+      '<h1>AI Engineering Manager Toolkit & Templates (22 Templates)</h1>' +
+      '<p class="lede">Comprehensive frameworks, RACI matrix, RAID log, use case estimation, and 22 production-ready copyable Markdown templates for engineering leaders.</p>';
+
+    // Assessment & Estimation
+    h += '<h2>' + esc(tk.useCaseAssessment.title) + '</h2>' +
+      '<p>' + fmt(tk.useCaseAssessment.intro) + '</p>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Score Range</th><th>Verdict</th><th>Recommended Leadership Action</th></tr></thead><tbody>' +
+      tk.useCaseAssessment.scoringMatrix.map(function (row) {
+        return '<tr><td><b>' + esc(row.range) + '</b></td><td><span class="door two-way">' + esc(row.verdict) + '</span></td><td>' + fmt(row.action) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+
+    // RACI Matrix
+    h += '<h2>' + esc(tk.raciMatrix.title) + '</h2>' +
+      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Key Engineering Activity</th>' +
+      tk.raciMatrix.roles.map(function (r) { return '<th>' + esc(r) + '</th>'; }).join('') +
+      '</tr></thead><tbody>' +
+      tk.raciMatrix.matrix.map(function (row) {
+        function badge(r) {
+          var cls = r === 'R' ? 'raci-r' : (r === 'A' ? 'raci-a' : (r === 'C' ? 'raci-c' : 'raci-i'));
+          return '<span class="raci-badge ' + cls + '">' + r + '</span>';
+        }
+        return '<tr><td><b>' + esc(row.task) + '</b></td>' +
+          row.raci.map(function (rc) { return '<td style="text-align:center">' + badge(rc) + '</td>'; }).join('') +
+          '</tr>';
+      }).join('') + '</tbody></table></div>';
+
+    // 22 Copyable Templates
+    h += '<h2>22 Production-Ready Copyable Leadership Templates</h2>' +
+      '<p style="max-width:68ch">Production-tested Markdown templates ready for immediate export into GitHub, Confluence, Jira, or ARB dossiers.</p>';
+
+    h += '<div class="seg" role="group" aria-label="Filter templates" id="tmplFilter" style="margin:14px 0;flex-wrap:wrap">' +
+      '<button type="button" data-f="all" class="on">All Templates (' + tk.templates.length + ')</button>' +
+      '<button type="button" data-f="Delivery">Delivery & Portfolio</button>' +
+      '<button type="button" data-f="Architecture">Architecture</button>' +
+      '<button type="button" data-f="Governance">Governance & Compliance</button>' +
+      '<button type="button" data-f="FinOps">FinOps</button>' +
+      '<button type="button" data-f="Operations">Operations & SRE</button>' +
+      '<button type="button" data-f="Leadership">Leadership</button>' +
+      '</div>';
+
+    h += '<div class="template-grid" id="tmplGrid">';
+    tk.templates.forEach(function (tmpl, idx) {
+      h += '<div class="template-card" data-cat="' + esc(tmpl.category) + '">' +
+        '<div class="template-meta">' +
+          '<span class="chip" style="--h:25">' + esc(tmpl.category) + '</span>' +
+          '<span>#' + (idx + 1) + '</span>' +
+        '</div>' +
+        '<h4>' + esc(tmpl.title) + '</h4>' +
+        '<p style="font-size:13px;color:var(--muted);margin:0 0 10px">' + esc(tmpl.description) + '</p>' +
+        '<div style="display:flex;gap:8px;margin-top:auto">' +
+          '<button class="btn-sm" type="button" data-toggle-tmpl="' + tmpl.id + '">View Template ⤢</button>' +
+          '<button class="copy-btn" type="button" data-copy-tmpl="' + tmpl.id + '">Copy Template</button>' +
+        '</div>' +
+        '<pre class="adr" id="tmpl-pre-' + tmpl.id + '" style="margin-top:10px;max-height:300px;overflow-y:auto" hidden tabindex="0">' + esc(tmpl.templateMarkdown) + '</pre>' +
+      '</div>';
+    });
+    h += '</div>';
+
+    afterRender = function () {
+      // Toggle view template
+      $$('button[data-toggle-tmpl]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-toggle-tmpl');
+          var target = $('#tmpl-pre-' + id);
+          if (target) {
+            target.hidden = !target.hidden;
+            this.textContent = target.hidden ? 'View Template ⤢' : 'Hide Template ⤹';
+          }
+        });
+      });
+
+      // Copy template
+      $$('button[data-copy-tmpl]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-copy-tmpl');
+          var tmpl = tk.templates.find(function (t) { return t.id === id; });
+          if (tmpl) copyText(tmpl.templateMarkdown, this);
+        });
+      });
+
+      // Filter templates
+      var tmplFilter = $('#tmplFilter');
+      if (tmplFilter) {
+        tmplFilter.addEventListener('click', function (e) {
+          var b = e.target.closest('button[data-f]');
+          if (!b) return;
+          var f = b.getAttribute('data-f');
+          $$('#tmplFilter button').forEach(function (x) { x.classList.toggle('on', x === b); });
+          $$('#tmplGrid .template-card').forEach(function (card) {
+            card.hidden = f !== 'all' && card.getAttribute('data-cat') !== f;
+          });
+        });
+      }
+    };
+
+    return h;
+  }
+
+  /* ==========================================================================
+     PAGE 14: DECISIONS, TOOLS, SHAPER, CHECKLISTS, CALCULATOR
+     ========================================================================== */
   var decById = {}; A.decisions.forEach(function (d) { decById[d.id] = d; });
   var themeById = {}; A.decisionThemes.forEach(function (t) { themeById[t.id] = t; });
   var THEME_HUE = { strategy: 212, architecture: 268, risk: 150 };
   var DOOR = { 'two-way': ['Two-way door', 'Easy to reverse'], 'one-way': ['One-way door', 'Hard to reverse'], 'mixed': ['Mixed door', 'Reversible at first'] };
-  var afterRender = null;
 
   function doorBadge(d) { var x = DOOR[d.door]; return '<span class="door ' + d.door + '" title="' + esc(x[1]) + '">' + x[0] + '</span>'; }
   function plain(s) {
-    return String(s).replace(/\[\[([a-z0-9-]+)(?:\|([^\]]+))?\]\]/g, function (m, id, label) { return label || (byId[id] ? byId[id].name : id); });
-  }
-  function copyText(text, btn) {
-    var label = btn ? (btn.getAttribute('data-l') || btn.textContent) : '';
-    if (btn) btn.setAttribute('data-l', label);
-    function done(ok) { if (!btn) return; btn.textContent = ok ? 'Copied ✓' : 'Select and copy manually'; setTimeout(function () { btn.textContent = label; }, 1800); }
-    function fallback() {
-      var t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
-      document.body.appendChild(t); t.select(); var ok = false;
-      try { ok = document.execCommand('copy'); } catch (e) {}
-      document.body.removeChild(t); done(ok);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, fallback); else fallback();
-  }
-  function seeLink(ref) {
-    var p = ref.split(':'), id = p[1];
-    if (p[0] === 'svc' && byId[id]) return '<a href="#/s/' + id + '">' + esc(byId[id].name) + '</a>';
-    if (p[0] === 'dec' && decById[id]) return '<a href="#/d/' + id + '">' + esc(decById[id].title) + '</a>';
-    return '';
-  }
-  function money(n) {
-    if (!isFinite(n)) return '—';
-    if (n >= 100) return '$' + Math.round(n).toLocaleString('en-US');
-    if (n >= 1) return '$' + n.toFixed(2);
-    if (n >= 0.01) return '$' + n.toFixed(3);
-    return '$' + n.toFixed(5);
+    return String(s || '').replace(/\\\[\\\[([a-z0-9-]+)(?:\\|([^\\\]]+))?\\\]\\\]/g, function (m, id, label) { return label || (byId[id] ? byId[id].name : id); });
   }
 
-  /* ----- role tabs: engineering managers and principal engineers ----- */
   var roleById = {}; A.roles.forEach(function (r) { roleById[r.id] = r; });
   var ROLE_KEY = 'atlas-role';
   function getRole() { try { var r = localStorage.getItem(ROLE_KEY); return roleById[r] ? r : null; } catch (e) { return null; } }
@@ -316,22 +1294,19 @@
       if (onChange) onChange(id);
     }
     list.addEventListener('click', function (e) { var b = e.target.closest('.tab'); if (b) select(b.getAttribute('data-tab')); });
-    list.addEventListener('keydown', function (e) {
-      var tabs = $$('.tab', list), i = tabs.indexOf(document.activeElement); if (i < 0) return;
-      var j = e.key === 'ArrowRight' ? (i + 1) % tabs.length : e.key === 'ArrowLeft' ? (tabs.length + i - 1) % tabs.length : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : -1;
-      if (j >= 0) { e.preventDefault(); select(tabs[j].getAttribute('data-tab'), true); }
-    });
   }
+
   function decisionCard(d, line, chip) {
     return '<a class="card" style="--h:' + THEME_HUE[d.theme] + '" href="#/d/' + d.id + '"><div class="mini">' + esc(themeById[d.theme].name) + '</div><h3>' + esc(d.title) + '</h3><p>' + esc(line) + '</p>' +
       '<div class="badges">' + doorBadge(d) + (chip || '') + '</div></a>';
   }
+
   function roleView(role) {
     var r = roleById[role], other = role === 'em' ? 'pe' : 'em';
     var h = '<p class="rolelede">' + fmt(r.blurb) + '</p>' +
       '<div class="lists two"><div class="box"><h3>What you decide</h3>' + ul(r.owns) + '</div>' +
       '<div class="box ml"><h3>Your rhythm</h3><ul>' + r.rhythm.map(function (x) { return '<li><b>' + esc(x[0]) + ':</b> ' + fmt(x[1]) + '</li>'; }).join('') + '</ul></div></div>';
-    h += '<h3 style="margin-top:30px">Quick calls</h3><p style="max-width:62ch">Find the situation you are in, take the default call, and open the guide for the options, rules and red flags behind it.</p>' +
+    h += '<h3 style="margin-top:30px">Quick calls</h3>' +
       '<div class="tablewrap"><table class="quick"><thead><tr><th>If this is happening</th><th>Default call</th><th>Guide</th></tr></thead><tbody>' +
       r.quick.map(function (q) { var d = decById[q[2]]; return '<tr><td>' + fmt(q[0]) + '</td><td>' + fmt(q[1]) + '</td><td><a href="#/d/' + d.id + '">' + esc(d.title) + '</a></td></tr>'; }).join('') + '</tbody></table></div>';
     var groups = [
@@ -346,6 +1321,7 @@
     });
     return h;
   }
+
   function allView() {
     var h = '<p class="rolelede">Every guide, grouped by theme. Each is marked with who usually leads it.</p>';
     A.decisionThemes.forEach(function (t) {
@@ -358,20 +1334,16 @@
 
   function pageDecisionHub(tab) {
     var active = (tab === 'em' || tab === 'pe' || tab === 'all') ? tab : (getRole() || 'em');
-    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Decisions</div><h1>Decision guides</h1>' +
+    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Decisions</div><h1>Architecture Decision Centre (27 Decision Guides)</h1>' +
       '<p class="lede">For engineering managers and principal engineers deciding how to build agentic and ML systems on AWS.</p>' +
-      '<p style="max-width:62ch">Each guide gives the options side by side, if/then rules, red flags to watch for, questions to ask in a design review, and a trigger for revisiting the decision. Each one is marked as a <b>two-way door</b> (cheap to reverse) or a <b>one-way door</b> (expensive to reverse), so you can spend your review time where it counts.</p>';
-    h += '<h2>Pick your role</h2><p style="max-width:62ch">The tabs below show the same guides through two lenses. Engineering managers get the default call, the evidence to ask for and the budget and people implications. Principal engineers get the default design, the trade-offs and the tests to demand. Your choice is remembered in this browser.</p>';
-    h += tabList('Decision guides by role', [['em', 'Engineering managers'], ['pe', 'Principal engineers'], ['all', 'All guides']], active);
-    h += tabPanel('em', active, roleView('em')) + tabPanel('pe', active, roleView('pe')) + tabPanel('all', active, allView());
+      tabList('Decision guides by role', [['em', 'Engineering managers'], ['pe', 'Principal engineers'], ['all', 'All guides']], active) +
+      tabPanel('em', active, roleView('em')) + tabPanel('pe', active, roleView('pe')) + tabPanel('all', active, allView());
+
     h += '<h2>Tools</h2><div class="grid">' +
-      '<a class="card" style="--h:25" href="#/d/shaper"><div class="mini">Interactive</div><h3>Solution shaper</h3><p>Answer seven questions about your use case and get a starting stack, risks, and the decisions to make next.</p></a>' +
-      '<a class="card" style="--h:150" href="#/d/checklists"><div class="mini">Checklist</div><h3>Readiness checklists</h3><p>A prototype-to-scale maturity ladder, a production-readiness checklist, and a decision-record template.</p></a>' +
-      '<a class="card" style="--h:185" href="#/d/calculator"><div class="mini">Calculator</div><h3>Cost per task</h3><p>Model unit economics and see which levers (caching, batching, routing) move the bill most.</p></a></div>';
-    h += '<h2>Using these in practice</h2><div class="lists two"><div class="box"><h3>In a design review</h3>' +
-      ul(['Open the guide for the decision under discussion and read its **red flags** aloud.', 'Ask the **review questions** and note which have no answer yet.', 'For a **one-way door**, require a written decision record before approving.']) + '</div>' +
-      '<div class="box ml"><h3>When planning a quarter</h3>' +
-      ul(['Run the **solution shaper** to get a first stack and the decisions it flags.', 'Use the **maturity ladder** to set exit criteria for each phase.', 'Put the **cost calculator** numbers next to the roadmap, not after it.']) + '</div></div>';
+      '<a class="card" style="--h:25" href="#/d/shaper"><div class="mini">Interactive</div><h3>Solution shaper</h3><p>Answer seven questions about your use case and get a starting stack, risks, and next decisions.</p></a>' +
+      '<a class="card" style="--h:150" href="#/d/checklists"><div class="mini">Checklist</div><h3>Readiness checklists</h3><p>A prototype-to-scale maturity ladder, a production-readiness checklist, and an ADR template.</p></a>' +
+      '<a class="card" style="--h:185" href="#/d/calculator"><div class="mini">Calculator</div><h3>Cost per task</h3><p>Model unit economics and see which levers move the bill most.</p></a></div>';
+
     afterRender = function () {
       mountTabs($('#main'), function (id) {
         if (id !== 'all') setRole(id);
@@ -470,7 +1442,7 @@
     paint();
   }
 
-  /* ----- checklists, ladder, ADR ----- */
+  /* ----- checklists ----- */
   var READY_KEY = 'atlas-ready-v1';
   function loadReady() { try { return JSON.parse(localStorage.getItem(READY_KEY)) || {}; } catch (e) { return {}; } }
   function saveReady(o) { try { localStorage.setItem(READY_KEY, JSON.stringify(o)); } catch (e) {} }
@@ -483,13 +1455,12 @@
       h += '<div class="rung"><div class="rn">' + (i + 1) + '</div><h3>' + esc(s.stage) + '</h3><div class="mini">' + esc(s.time) + '</div><p>' + esc(s.goal) + '</p>' +
         '<h4>Exit when</h4>' + ul(s.exit) + '<h4 class="no">Not yet</h4><p class="nope">' + s.skip.map(esc).join(' · ') + '</p></div>';
     });
-    h += '</div><h2>Production readiness</h2><p style="max-width:62ch">Tick items as they become true. Your progress is saved in this browser only.</p>' +
+    h += '</div><h2>Production readiness</h2>' +
       '<div class="ready-bar"><div class="seg" role="group" aria-label="Filter checklist" id="rdFilter">' +
       '<button type="button" data-f="all" aria-pressed="true">All</button><button type="button" data-f="agent" aria-pressed="false">Agentic</button><button type="button" data-f="ml" aria-pressed="false">Classic ML</button></div>' +
       '<div class="prog" aria-live="polite"><div class="track"><div class="fill" id="rdFill"></div></div><span id="rdNum"></span></div></div><div id="rdList"></div>' +
       '<div class="btns" style="margin-top:16px"><button class="btn" type="button" id="rdCopy">Copy open items as markdown</button><button class="btn" type="button" id="rdReset">Reset</button></div>';
-    h += '<h2>Decision record template</h2><p style="max-width:62ch">A short record for each one-way door. The point is the reversibility line and the revisit trigger.</p>' +
-      '<div class="codebar"><button class="btn" type="button" id="adrCopy">Copy template</button></div><pre class="adr" tabindex="0">' + esc(A.adrTemplate) + '</pre>';
+    h += '<h2>Decision record template</h2><div class="codebar"><button class="btn" type="button" id="adrCopy">Copy template</button></div><pre class="adr" tabindex="0">' + esc(A.adrTemplate) + '</pre>';
     afterRender = mountChecklists;
     return h;
   }
@@ -503,9 +1474,8 @@
         h += '<h3>' + esc(g.name) + '</h3><ul class="chklist">';
         items.forEach(function (it) {
           total++; if (state[it.id]) done++;
-          var see = (it.see || []).map(seeLink).filter(Boolean).join(' · ');
           h += '<li><label class="chk"><input type="checkbox" data-id="' + it.id + '"' + (state[it.id] ? ' checked' : '') + '><span><span class="t">' + fmt(it.t) + '</span>' +
-            '<span class="w">' + esc(it.why) + '</span>' + (see ? '<span class="s">See: ' + see + '</span>' : '') + '</span></label></li>';
+            '<span class="w">' + esc(it.why) + '</span></span></label></li>';
         });
         h += '</ul>';
       });
@@ -517,8 +1487,7 @@
       var id = e.target.getAttribute('data-id'); if (!id) return;
       if (e.target.checked) state[id] = 1; else delete state[id];
       saveReady(state);
-      var vis = 0, dn = 0; A.readiness.forEach(function (g) { g.items.filter(visible).forEach(function (it) { vis++; if (state[it.id]) dn++; }); });
-      $('#rdNum').textContent = dn + ' of ' + vis; $('#rdFill').style.width = (vis ? Math.round(dn / vis * 100) : 0) + '%';
+      paint();
     });
     $('#rdFilter').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-f]'); if (!b) return; filter = b.getAttribute('data-f');
@@ -532,7 +1501,6 @@
         var open = g.items.filter(function (it) { return visible(it) && !state[it.id]; }); if (!open.length) return;
         L.push('## ' + g.name); open.forEach(function (it) { L.push('- [ ] ' + plain(it.t)); }); L.push('');
       });
-      if (L.length === 2) L.push('All items in this view are done.');
       copyText(L.join('\n'), this);
     });
     $('#adrCopy').addEventListener('click', function () { copyText(A.adrTemplate, this); });
@@ -553,9 +1521,9 @@
       ['pOut', 'Output price per 1M tokens', '$', 'Output is typically several times the input price.'],
       ['infra', 'Other cost per task', '$', 'Retrieval, gateway, storage, orchestration, logging.']]],
     ['Levers', [
-      ['sem', 'Answered from semantic cache', '%', 'Share of tasks that skip the model entirely. Check answers stay correct.'],
+      ['sem', 'Answered from semantic cache', '%', 'Share of tasks that skip the model entirely.'],
       ['cacheFrac', 'Input tokens served from prompt cache', '%', 'Stable prefixes such as system prompts and shared documents.'],
-      ['cacheDisc', 'Prompt-cache discount', '%', 'Cached input is billed at a reduced rate. Confirm for your model.'],
+      ['cacheDisc', 'Prompt-cache discount', '%', 'Cached input is billed at a reduced rate.'],
       ['batchShare', 'Share of calls sent to batch', '%', 'Only for work that can wait.'],
       ['batchDisc', 'Batch discount', '%', 'Confirm the current discount for your model.']]]
   ];
@@ -569,7 +1537,6 @@
   function pageCalculator() {
     var h = '<div class="eyebrow"><a href="#/">Atlas</a> / <a href="#/d">Decisions</a> / Tool</div><h1>Cost per task</h1>' +
       '<p class="lede">Unit economics for an LLM feature, and which levers move them.</p>' +
-      '<div class="callout"><b>About the numbers</b>Prices here are placeholders for the arithmetic. Look up current prices for your model and Region, and measure your own token counts. Nothing is sent anywhere: the calculation runs in your browser.</div>' +
       '<div class="wide"><div class="calc"><form id="calcForm" class="calcform" onsubmit="return false">';
     CALC_FIELDS.forEach(function (g) {
       h += '<fieldset><legend>' + esc(g[0]) + '</legend>';
@@ -605,21 +1572,6 @@
       h += '<h3>Where the money goes</h3><div class="split" role="img" aria-label="Cost split">' +
         '<span style="width:' + (c.inC / tot * 100) + '%" class="s1"></span><span style="width:' + (c.outC / tot * 100) + '%" class="s2"></span><span style="width:' + (c.infra / tot * 100) + '%" class="s3"></span></div>' +
         '<ul class="legend"><li><i class="s1"></i>Input tokens ' + money(c.inC) + '</li><li><i class="s2"></i>Output tokens ' + money(c.outC) + '</li><li><i class="s3"></i>Other ' + money(c.infra) + '</li></ul>';
-      var levers = [
-        ['Halve output tokens (tighter prompts, shorter answers)', function (q) { q.outTok *= 0.5; }],
-        ['Cache 60% of the prompt', function (q) { q.cacheFrac = Math.max(q.cacheFrac, 60); }],
-        ['Answer 25% of tasks from a semantic cache', function (q) { q.sem = Math.max(q.sem, 25); }],
-        ['Send half the calls to batch (if the work can wait)', function (q) { q.batchShare = Math.max(q.batchShare, 50); }],
-        ['One fewer model call per task', function (q) { q.calls = Math.max(1, q.calls - 1); }],
-        ['Route to a model one fifth the price', function (q) { q.pIn /= 5; q.pOut /= 5; }],
-        ['Raise the success rate to 95%', function (q) { q.success = Math.max(q.success, 95); }]
-      ];
-      h += '<h3>What each lever would do</h3><div class="tablewrap"><table><thead><tr><th>Lever</th><th>Per month</th><th>Change</th><th>Per successful task</th></tr></thead><tbody>' +
-        levers.map(function (L) {
-          var q = clone(); L[1](q); var r = calcCost(q), d = c.month ? (r.month - c.month) / c.month * 100 : 0;
-          return '<tr><td style="white-space:normal">' + esc(L[0]) + '</td><td>' + money(r.month) + '</td><td class="' + (d < -0.5 ? 'dn' : (d > 0.5 ? 'up' : '')) + '">' + (Math.abs(d) < 0.5 ? 'no change' : (d > 0 ? '+' : '') + d.toFixed(0) + '%') + '</td><td>' + money(r.ok) + '</td></tr>';
-        }).join('') + '</tbody></table></div>';
-      h += '<p class="fine">Each row changes one thing from your current inputs. Levers are not additive, and each one can cost quality, so re-run your evals after applying it.</p>';
       out.innerHTML = h;
     }
     fill();
@@ -628,7 +1580,9 @@
     read(); paint();
   }
 
-  /* ---------- playbooks ---------- */
+  /* ==========================================================================
+     PAGE 15: PLAYBOOKS (#/p and #/p/:id)
+     ========================================================================== */
   function pagePlaybooksIndex() {
     var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Playbooks</div>' +
       '<h1>AI Engineering Playbooks</h1>' +
@@ -663,6 +1617,26 @@
       }
     });
 
+    // Check for Workload Release Gates
+    var gateKey = pb.id.indexOf('rag') > -1 ? 'rag' : (pb.id.indexOf('multi-agent') > -1 ? 'agent' : (pb.id.indexOf('genaiops') > -1 ? 'ml' : null));
+    if (gateKey && A.workloadGates && A.workloadGates[gateKey]) {
+      h += '<h2>Workload-Specific Production Release Gates</h2>' +
+        '<p style="max-width:68ch">Mandatory exit criteria before this architecture can be promoted from pilot to general production.</p>' +
+        '<div class="tablewrap"><table class="matrix-table"><thead><tr>' +
+        '<th>Gate ID</th><th>Quality Requirement</th><th>Threshold Target</th><th>Blocking Level</th><th>Verification Tooling</th>' +
+        '</tr></thead><tbody>' +
+        A.workloadGates[gateKey].map(function (g) {
+          return '<tr>' +
+            '<td><code>' + esc(g.id) + '</code></td>' +
+            '<td><b>' + esc(g.gate) + '</b></td>' +
+            '<td>' + esc(g.threshold) + '</td>' +
+            '<td><span class="severity-pill ' + (g.blocking === 'Hard Block' ? 'critical' : 'medium') + '">' + esc(g.blocking) + '</span></td>' +
+            '<td><small>' + esc(g.tooling) + '</small></td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table></div>';
+    }
+
     if (pb.see && pb.see.length) {
       h += '<h2>Connected Architectures & Decisions</h2><div class="pairs">' +
         pb.see.map(function (r) {
@@ -684,265 +1658,15 @@
     return h;
   }
 
-  /* ---------- governance ---------- */
-  function pageGovernance() {
-    var g = A.governance;
-    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Security & Governance</div>' +
-      '<h1>Enterprise AI Security, Governance & AWS Well-Architected Framework</h1>' +
-      '<p class="lede">Operationalizing generative AI within AWS Control Tower enterprise landing zones, zero-trust network boundaries, and defense-in-depth security controls.</p>';
-
-    // CAF Landing Zone
-    h += '<h2>' + esc(g.landingZones.title) + '</h2>' +
-      '<p>' + fmt(g.landingZones.intro) + '</p>' +
-      '<div class="lists two" style="margin:16px 0">' +
-      g.landingZones.principles.map(function (p) {
-        return '<div class="box"><h3>' + esc(p.name) + '</h3><p>' + fmt(p.desc) + '</p></div>';
-      }).join('') + '</div>';
-
-    h += '<h3>Enterprise Management Group Hierarchy</h3>' +
-      '<p style="max-width:62ch">Structure subscriptions to separate shared foundational model capacity and central API gateways from application workload teams.</p>' +
-      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Management Group Level</th><th>Target Scope</th><th>Architecture Purpose</th></tr></thead><tbody>' +
-      g.landingZones.hierarchy.map(function (row) {
-        return '<tr><td><b>' + esc(row.level) + '</b></td><td>' + esc(row.scope) + '</td><td>' + fmt(row.purpose) + '</td></tr>';
-      }).join('') + '</tbody></table></div>';
-
-    h += '<h3>Zero-Trust Network Topology: ' + esc(g.landingZones.networkTopology.type) + '</h3>' +
-      '<div class="grid" style="margin:16px 0">' +
-      g.landingZones.networkTopology.components.map(function (c) {
-        return '<div class="card" style="--h:25"><div class="mini">Network Component</div><h3>' + esc(c.name) + '</h3><p>' + fmt(c.desc) + '</p></div>';
-      }).join('') + '</div>';
-
-    // Security Framework
-    h += '<h2>' + esc(g.securityFramework.title) + '</h2>' +
-      '<p>' + fmt(g.securityFramework.intro) + '</p>' +
-      '<div class="grid" style="margin:16px 0">' +
-      g.securityFramework.pillars.map(function (p) {
-        return '<div class="box" style="margin-bottom:8px"><h3>' + esc(p.name) + '</h3>' + ul(p.controls) + '</div>';
-      }).join('') + '</div>';
-
-    // Tenancy Models
-    h += '<h2>' + esc(g.tenancyModels.title) + '</h2>' +
-      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Isolation Model</th><th>Best Fit</th><th>Mechanism</th><th>Pros</th><th>Cons</th></tr></thead><tbody>' +
-      g.tenancyModels.models.map(function (m) {
-        return '<tr><td><b>' + esc(m.name) + '</b></td><td>' + fmt(m.fit) + '</td><td>' + fmt(m.mechanism) + '</td><td><span style="color:var(--ok)">' + fmt(m.pros) + '</span></td><td><span style="color:var(--warn)">' + fmt(m.cons) + '</span></td></tr>';
-      }).join('') + '</tbody></table></div>';
-
-    // Policy Initiatives
-    h += '<h2>' + esc(g.policyInitiatives.title) + '</h2>' +
-      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Policy / SCP Name</th><th>Enforcement Effect</th><th>Compliance & Security Purpose</th></tr></thead><tbody>' +
-      g.policyInitiatives.policies.map(function (pol) {
-        var effectColor = pol.effect === 'Deny' ? 'var(--warn)' : 'var(--accent)';
-        return '<tr><td><b>' + esc(pol.name) + '</b></td><td><code style="color:' + effectColor + '">' + esc(pol.effect) + '</code></td><td>' + fmt(pol.purpose) + '</td></tr>';
-      }).join('') + '</tbody></table></div>';
-
-    return h;
-  }
-
-  /* ---------- operations ---------- */
-  function pageOperations() {
-    var op = A.operations;
-    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Operations</div>' +
-      '<h1>' + esc(op.title) + '</h1>' +
-      '<p class="lede">' + fmt(op.lede) + '</p>';
-
-    // Dashboard Template
-    h += '<h2>' + esc(op.dashboardTemplate.title) + '</h2>' +
-      '<p class="fine">' + esc(op.dashboardTemplate.subtitle) + '</p>' +
-      '<div class="dash-grid">';
-
-    op.dashboardTemplate.widgets.forEach(function (w) {
-      h += '<div class="dash-card">' +
-        '<div class="dash-top">' +
-          '<h4>' + esc(w.title) + '</h4>' +
-          '<span class="status-pill ' + (w.status === 'ok' ? 'ok' : 'warn') + '">● ' + esc(w.status) + '</span>' +
-        '</div>' +
-        '<div class="dash-metric">' + esc(w.metric) + '</div>' +
-        '<div class="dash-sub">' + esc(w.sub) + '</div>' +
-        '<div class="dash-target">' + esc(w.target) + '</div>' +
-        '<div style="margin-top:auto;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
-          '<button class="btn-sm" type="button" data-toggle-kql="' + w.id + '">View Query ⤢</button>' +
-          '<button class="btn-sm" type="button" data-copy="' + esc(w.kusto || w.query || '') + '">Copy Query</button>' +
-        '</div>' +
-        '<div class="kql-box" id="kql-' + w.id + '" hidden>' + esc(w.kusto) + '</div>' +
-      '</div>';
-    });
-    h += '</div>';
-
-    // Runbooks
-    h += '<h2>Production SRE Incident Runbooks</h2>' +
-      '<p style="max-width:62ch">Step-by-step remediation procedures for on-call engineers when stochastic or capacity anomalies trigger high-severity alerts.</p>';
-
-    op.runbooks.forEach(function (rb) {
-      var sevColor = rb.severity.indexOf('P1') > -1 ? 'var(--warn)' : 'var(--accent)';
-      h += '<div class="box" style="margin:16px 0;border-left:5px solid ' + sevColor + '">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">' +
-          '<h3>' + esc(rb.title) + '</h3>' +
-          '<span class="door ' + (rb.severity.indexOf('P1') > -1 ? 'one-way' : 'two-way') + '">' + esc(rb.severity) + '</span>' +
-        '</div>' +
-        '<p style="margin:8px 0;color:var(--muted)"><b>Trigger Condition:</b> ' + fmt(rb.trigger) + '</p>' +
-        '<h4>Remediation Steps:</h4>' +
-        '<ol style="margin:8px 0;padding-left:22px">' +
-        rb.steps.map(function (st) { return '<li style="margin:6px 0">' + fmt(st) + '</li>'; }).join('') +
-        '</ol>' +
-      '</div>';
-    });
-
-    // Postmortem Template
-    var pm = op.postmortemTemplate;
-    h += '<h2>' + esc(pm.title) + '</h2>' +
-      '<p>' + fmt(pm.intro) + '</p>' +
-      '<div style="margin:12px 0 8px;display:flex;justify-content:flex-end">' +
-        '<button class="btn" type="button" id="copyPostmortem">Copy Postmortem Template</button>' +
-      '</div>' +
-      '<pre class="adr">' + esc(pm.templateMarkdown) + '</pre>';
-
-    afterRender = function () {
-      $$('button[data-toggle-kql]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var id = this.getAttribute('data-toggle-kql');
-          var target = $('#kql-' + id);
-          if (target) {
-            target.hidden = !target.hidden;
-            this.textContent = target.hidden ? 'View Query ⤢' : 'Hide Query ⤹';
-          }
-        });
-      });
-      $$('button[data-copy]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          copyText(this.getAttribute('data-copy'), this);
-        });
-      });
-      var copyPmBtn = $('#copyPostmortem');
-      if (copyPmBtn) {
-        copyPmBtn.addEventListener('click', function () {
-          copyText(pm.templateMarkdown, this);
-        });
-      }
-    };
-
-    return h;
-  }
-
-  /* ---------- toolkit ---------- */
-  function pageToolkit() {
-    var tk = A.toolkit;
-    var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Manager Toolkit</div>' +
-      '<h1>' + esc(tk.title) + '</h1>' +
-      '<p class="lede">' + fmt(tk.lede) + '</p>';
-
-    // Use Case Assessment
-    h += '<h2>' + esc(tk.useCaseAssessment.title) + '</h2>' +
-      '<p>' + fmt(tk.useCaseAssessment.intro) + '</p>' +
-      '<div class="lists two" style="margin:16px 0">';
-    tk.useCaseAssessment.dimensions.forEach(function (dim) {
-      h += '<div class="box"><h3>' + esc(dim.category) + '</h3><ul style="margin:6px 0;padding-left:18px">' +
-        dim.criteria.map(function (cr) { return '<li style="margin:5px 0"><b>' + esc(cr.name) + ':</b> ' + fmt(cr.desc) + '</li>'; }).join('') +
-        '</ul></div>';
-    });
-    h += '</div>' +
-      '<h3>Decision & Prioritization Matrix</h3>' +
-      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Score Range</th><th>Verdict</th><th>Recommended Leadership Action</th></tr></thead><tbody>' +
-      tk.useCaseAssessment.scoringMatrix.map(function (row) {
-        return '<tr><td><b>' + esc(row.range) + '</b></td><td><span class="door two-way">' + esc(row.verdict) + '</span></td><td>' + fmt(row.action) + '</td></tr>';
-      }).join('') + '</tbody></table></div>';
-
-    // Project Estimation
-    h += '<h2>' + esc(tk.projectEstimation.title) + '</h2>' +
-      '<p>' + fmt(tk.projectEstimation.intro) + '</p>' +
-      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Delivery Phase</th><th>Headcount Allocation</th><th>Core Engineering Deliverables</th></tr></thead><tbody>' +
-      tk.projectEstimation.phases.map(function (p) {
-        return '<tr><td><b>' + esc(p.name) + '</b></td><td><code style="color:var(--accent)">' + esc(p.alloc) + '</code></td><td>' + fmt(p.deliverables) + '</td></tr>';
-      }).join('') + '</tbody></table></div>';
-
-    // RACI Matrix
-    h += '<h2>' + esc(tk.raciMatrix.title) + '</h2>' +
-      '<p>' + fmt(tk.raciMatrix.intro) + '</p>' +
-      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Key Engineering Activity</th>' +
-      tk.raciMatrix.roles.map(function (r) { return '<th>' + esc(r) + '</th>'; }).join('') +
-      '</tr></thead><tbody>' +
-      tk.raciMatrix.matrix.map(function (row) {
-        function badge(r) {
-          var cls = r === 'R' ? 'raci-r' : (r === 'A' ? 'raci-a' : (r === 'C' ? 'raci-c' : 'raci-i'));
-          return '<span class="raci-badge ' + cls + '">' + r + '</span>';
-        }
-        return '<tr><td><b>' + esc(row.task) + '</b></td>' +
-          row.raci.map(function (rc) { return '<td style="text-align:center">' + badge(rc) + '</td>'; }).join('') +
-          '</tr>';
-      }).join('') + '</tbody></table></div>' +
-      '<p class="fine"><b>R</b>esponsible · <b>A</b>ccountable · <b>C</b>onsulted · <b>I</b>nformed</p>';
-
-    // RAID Tracker
-    h += '<h2>' + esc(tk.raidTracker.title) + '</h2>' +
-      '<p>' + fmt(tk.raidTracker.intro) + '</p>' +
-      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Type</th><th>Risk / Assumption / Issue / Dependency</th><th>Engineering Mitigation Strategy</th></tr></thead><tbody>' +
-      tk.raidTracker.items.map(function (it) {
-        var cls = it.type === 'Risk' ? 'door one-way' : (it.type === 'Issue' ? 'door mixed' : 'door two-way');
-        return '<tr><td><span class="' + cls + '">' + esc(it.type) + '</span></td><td><b>' + esc(it.title) + '</b></td><td>' + fmt(it.mitigation) + '</td></tr>';
-      }).join('') + '</tbody></table></div>';
-
-    // Quality Gates
-    h += '<h2>' + esc(tk.qualityGates.title) + '</h2>' +
-      '<p>' + fmt(tk.qualityGates.intro) + '</p>' +
-      '<div class="grid" style="margin:16px 0">' +
-      tk.qualityGates.stages.map(function (st) {
-        return '<div class="box"><h3>' + esc(st.stage) + '</h3><ul style="margin:6px 0;padding-left:18px">' +
-          st.criteria.map(function (c) { return '<li style="margin:6px 0">' + fmt(c) + '</li>'; }).join('') +
-          '</ul></div>';
-      }).join('') + '</div>';
-
-    // Vendor Matrix
-    h += '<h2>' + esc(tk.vendorMatrix.title) + '</h2>' +
-      '<p>' + fmt(tk.vendorMatrix.intro) + '</p>' +
-      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Model Family</th><th>Key Strengths</th><th>Trade-offs & Latency</th><th>Best Production Fit</th></tr></thead><tbody>' +
-      tk.vendorMatrix.models.map(function (m) {
-        return '<tr><td><b>' + esc(m.family) + '</b></td><td><span style="color:var(--ok)">' + fmt(m.strengths) + '</span></td><td><span style="color:var(--warn)">' + fmt(m.tradeoffs) + '</span></td><td>' + fmt(m.bestFit) + '</td></tr>';
-      }).join('') + '</tbody></table></div>';
-
-    // Skills Matrix
-    h += '<h2>' + esc(tk.skillsMatrix.title) + '</h2>' +
-      '<p>' + fmt(tk.skillsMatrix.intro) + '</p>' +
-      '<div class="tablewrap"><table class="matrix-table"><thead><tr><th>Core Competency Area</th><th>Required Technical Skills</th><th>Team Target Level</th></tr></thead><tbody>' +
-      tk.skillsMatrix.competencies.map(function (c) {
-        return '<tr><td><b>' + esc(c.area) + '</b></td><td>' + fmt(c.skills) + '</td><td><span class="door two-way">' + esc(c.levelTarget) + '</span></td></tr>';
-      }).join('') + '</tbody></table></div>';
-
-    // Copyable Templates
-    h += '<h2>Copyable Leadership Templates</h2>' +
-      '<div class="box" style="margin:16px 0">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center">' +
-          '<h3>' + esc(tk.architectureReview.title) + '</h3>' +
-          '<button class="btn" type="button" id="copyArchReview">Copy Review Template</button>' +
-        '</div>' +
-        '<p style="margin:8px 0;color:var(--muted)">' + fmt(tk.architectureReview.intro) + '</p>' +
-        '<pre class="adr" style="margin-top:10px">' + esc(tk.architectureReview.templateMarkdown) + '</pre>' +
-      '</div>' +
-      '<div class="box" style="margin:16px 0">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center">' +
-          '<h3>' + esc(tk.executiveReportTemplate.title) + '</h3>' +
-          '<button class="btn" type="button" id="copyExecReport">Copy Executive Report</button>' +
-        '</div>' +
-        '<p style="margin:8px 0;color:var(--muted)">' + fmt(tk.executiveReportTemplate.intro) + '</p>' +
-        '<pre class="adr" style="margin-top:10px">' + esc(tk.executiveReportTemplate.templateMarkdown) + '</pre>' +
-      '</div>';
-
-    afterRender = function () {
-      var btn1 = $('#copyArchReview');
-      if (btn1) btn1.addEventListener('click', function () { copyText(tk.architectureReview.templateMarkdown, this); });
-      var btn2 = $('#copyExecReport');
-      if (btn2) btn2.addEventListener('click', function () { copyText(tk.executiveReportTemplate.templateMarkdown, this); });
-    };
-
-    return h;
-  }
-
-  /* ---------- labs & roadmaps ---------- */
+  /* ==========================================================================
+     PAGE 16: LABS & ROADMAPS (#/labs)
+     ========================================================================== */
   function pageLabs() {
     var l = A.labs;
     var h = '<div class="eyebrow"><a href="#/">Atlas</a> / Labs & Roadmaps</div>' +
       '<h1>' + esc(l.title) + '</h1>' +
       '<p class="lede">' + fmt(l.lede) + '</p>';
 
-    // Learning Paths
     h += '<h2>Role-Based Progressive Learning Roadmaps</h2>' +
       '<div class="roadmap-grid">';
     l.learningPaths.forEach(function (path) {
@@ -959,10 +1683,8 @@
     });
     h += '</div>';
 
-    // Hands-on Labs
     h += '<h2>Hands-on Production Labs (5 Exercises)</h2>' +
       '<p style="max-width:62ch">Step-by-step practical implementation exercises for engineering teams using the AWS Management Console, CLI, and SDKs.</p>';
-
     l.exercises.forEach(function (ex) {
       h += '<div class="lab-card">' +
         '<div class="lab-header">' +
@@ -978,7 +1700,6 @@
       '</div>';
     });
 
-    // AWS Architecture Hub
     h += '<h2>Official AWS Architecture Resources</h2>' +
       '<div class="grid" style="margin:16px 0">';
     l.officialResources.forEach(function (res) {
@@ -994,28 +1715,35 @@
     return h;
   }
 
-  function notFound() { return '<h1>Not found</h1><p class="lede">That page does not exist. <a href="#/">Back to the atlas</a>.</p>'; }
+  function notFound() { return '<h1>Not found</h1><p class="lede">That page does not exist. <a href="#/">Back to the Command Centre</a>.</p>'; }
 
-  /* ---------- sidebar ---------- */
+  /* ==========================================================================
+     SIDEBAR NAVIGATION
+     ========================================================================== */
   function nl(href, label, cur) { return '<a class="nl" href="' + href + '"' + (cur ? ' aria-current="page"' : '') + '>' + label + '</a>'; }
   function renderSide(kind, id) {
     var cur = kind === 's' && byId[id] ? byId[id].cat : (kind === 'c' ? id : null);
     var curTheme = kind === 'd' && decById[id] ? decById[id].theme : null;
-    var h = '<h3>Explore</h3>' +
-      nl('#/', 'Home', !kind) +
-      nl('#/a', 'Architectures (' + A.architectures.length + ')', kind === 'a' && !id) +
+
+    var h = '<h3>Command & Operations</h3>' +
+      nl('#/', 'Command Centre', !kind || kind === 'command') +
+      nl('#/delivery', 'AI Project Lifecycle (12)', kind === 'delivery') +
+      nl('#/arch-review', 'Architecture Review Board', kind === 'arch-review') +
+      nl('#/selector', 'Service Selector Matrix', kind === 'selector') +
+      nl('#/models', 'Model Registry (16)', kind === 'models') +
+      nl('#/eval', 'Eval & Quality Engineering', kind === 'eval') +
+      nl('#/finops', 'FinOps & Unit Economics', kind === 'finops') +
+      nl('#/ops', 'Production SRE & Ops', kind === 'ops') +
+      nl('#/gov', 'Security & Compliance', kind === 'gov') +
+      nl('#/leadership', 'Leadership & Workforce', kind === 'leadership') +
+      nl('#/toolkit', 'Manager Templates (22)', kind === 'toolkit');
+
+    h += '<h3>Architecture & Decisions</h3>' +
+      nl('#/a', 'Reference Architectures (' + A.architectures.length + ')', kind === 'a' && !id) +
       nl('#/d', 'Decision Centre (' + A.decisions.length + ')', kind === 'd' && !id) +
       nl('#/p', 'Engineering Playbooks (' + A.engineeringPlaybooks.length + ')', kind === 'p' && !id) +
-      nl('#/gov', 'Security & Governance', kind === 'gov') +
-      nl('#/ops', 'Production Operations', kind === 'ops') +
-      nl('#/toolkit', 'Manager Toolkit', kind === 'toolkit') +
+      nl('#/services', 'Services Catalogue (' + A.services.length + ')', kind === 'services' || (kind === 'c' && !id)) +
       nl('#/labs', 'Labs & Roadmaps', kind === 'labs');
-
-    h += '<h3>Playbooks</h3>';
-    A.engineeringPlaybooks.forEach(function (p) {
-      var shortTitle = p.title.replace(' Playbook', '').replace(' Engineering & Orchestration', '').replace(' & Hardening', '');
-      h += nl('#/p/' + p.id, shortTitle, kind === 'p' && id === p.id);
-    });
 
     h += '<h3>Decisions & Tools</h3>' +
       nl('#/d/em', 'For engineering managers', kind === 'd' && id === 'em') +
@@ -1034,7 +1762,7 @@
     h += '<details' + (kind === 'a' && id ? ' open' : '') + '><summary style="--h:25"><span class="dot"></span><span>All Architectures</span><span class="n">' + A.architectures.length + '</span></summary><ul>' +
       A.architectures.map(function (a) { return '<li><a href="#/a/' + a.id + '"' + (kind === 'a' && id === a.id ? ' aria-current="page"' : '') + '>' + esc(a.name) + '</a></li>'; }).join('') + '</ul></details>';
 
-    h += '<h3>Services (' + A.services.length + ')</h3>';
+    h += '<h3>Services by Category (' + A.services.length + ')</h3>';
     A.categories.forEach(function (c) {
       h += '<details' + (cur === c.id ? ' open' : '') + '><summary style="--h:' + c.hue + '"><span class="dot"></span><a href="#/c/' + c.id + '"' + (kind === 'c' && id === c.id ? ' aria-current="page"' : '') + '>' + esc(c.name) + '</a><span class="n">' + c.items.length + '</span></summary><ul>' +
         c.items.map(function (s) { return '<li><a href="#/s/' + s.id + '"' + (kind === 's' && id === s.id ? ' aria-current="page"' : '') + '>' + esc(s.name) + '</a></li>'; }).join('') + '</ul></details>';
@@ -1042,20 +1770,84 @@
     $('#side').innerHTML = h;
   }
 
-  /* ---------- router ---------- */
+  /* ==========================================================================
+     ROUTER & SEARCH
+     ========================================================================== */
   function render() {
     $$('.stepper').forEach(function (el) { if (el._stop) el._stop(); });
     var parts = location.hash.replace(/^#\/?/, '').split('/'), kind = parts[0] || '', id = parts[1] || '';
     pendingSteppers = []; afterRender = null;
-    var html, title = 'AWS for AI/ML Systems — an interactive atlas';
-    if (kind === 's' && byId[id]) { html = pageService(id); title = byId[id].name + ' — AWS for AI/ML Systems'; }
-    else if (kind === 'c' && catById[id]) { html = pageCategory(id); title = catById[id].name + ' — AWS for AI/ML Systems'; }
-    else if (kind === 'a') { if (id && archById[id]) { html = pageArch(id); title = archById[id].name + ' — AWS for AI/ML Systems'; } else html = pageArchIndex(); }
+    var html, title = 'AWS AI Atlas — AI Engineering Management Operating System';
+
+    if (kind === '' || kind === 'command') {
+      html = pageCommandCentre();
+      title = 'AI Engineering Manager Command Centre — AWS AI Atlas';
+    }
+    else if (kind === 'services') {
+      html = pageServicesCatalog(id);
+      title = 'AWS AI & Data Services Catalogue — AWS AI Atlas';
+    }
+    else if (kind === 'delivery') {
+      html = pageDelivery();
+      title = 'AI Project Delivery Lifecycle Centre — AWS AI Atlas';
+    }
+    else if (kind === 'arch-review') {
+      html = pageArchReview();
+      title = 'Enterprise AI Architecture Review System — AWS AI Atlas';
+    }
+    else if (kind === 'selector') {
+      html = pageSelector();
+      title = 'AWS AI Service Selection Matrix — AWS AI Atlas';
+    }
+    else if (kind === 'models') {
+      html = pageModels();
+      title = 'Enterprise Model Registry & Lifecycle — AWS AI Atlas';
+    }
+    else if (kind === 'eval') {
+      html = pageEval();
+      title = 'AI Evaluation & Quality Engineering Centre — AWS AI Atlas';
+    }
+    else if (kind === 'finops') {
+      html = pageFinOps();
+      title = 'AI FinOps & Unit Economics — AWS AI Atlas';
+    }
+    else if (kind === 'ops') {
+      html = pageOperations();
+      title = 'Production AI Operations & SRE — AWS AI Atlas';
+    }
+    else if (kind === 'gov') {
+      html = pageGovernance();
+      title = 'Enterprise AI Security & Governance — AWS AI Atlas';
+    }
+    else if (kind === 'leadership') {
+      html = pageLeadership();
+      title = 'AI Engineering Leadership & Technical Debt — AWS AI Atlas';
+    }
+    else if (kind === 'toolkit') {
+      html = pageToolkit();
+      title = 'AI Engineering Manager Toolkit & Templates — AWS AI Atlas';
+    }
+    else if (kind === 'labs') {
+      html = pageLabs();
+      title = 'Hands-on Labs & Learning Roadmaps — AWS AI Atlas';
+    }
+    else if (kind === 's' && byId[id]) {
+      html = pageService(id);
+      title = byId[id].name + ' — AWS AI Atlas';
+    }
+    else if (kind === 'c' && catById[id]) {
+      html = pageCategory(id);
+      title = catById[id].name + ' — AWS AI Atlas';
+    }
+    else if (kind === 'a') {
+      if (id && archById[id]) { html = pageArch(id); title = archById[id].name + ' — AWS AI Atlas'; }
+      else { html = pageArchIndex(); title = 'Reference Architectures — AWS AI Atlas'; }
+    }
     else if (kind === 'd') {
       var TOOLS = { shaper: ['Solution shaper', pageShaper], checklists: ['Readiness checklists', pageChecklists], calculator: ['Cost per task', pageCalculator] };
-      if (!id || id === 'em' || id === 'pe' || id === 'all') { html = pageDecisionHub(id); title = (id === 'em' ? 'Decisions for engineering managers' : id === 'pe' ? 'Decisions for principal engineers' : 'Decision guides') + ' — AWS for AI/ML Systems'; }
-      else if (TOOLS[id]) { html = TOOLS[id][1](); title = TOOLS[id][0] + ' — AWS for AI/ML Systems'; }
-      else if (decById[id]) { html = pageDecision(id); title = decById[id].title + ' — AWS for AI/ML Systems'; }
+      if (!id || id === 'em' || id === 'pe' || id === 'all') { html = pageDecisionHub(id); title = (id === 'em' ? 'Decisions for engineering managers' : id === 'pe' ? 'Decisions for principal engineers' : 'Decision guides') + ' — AWS AI Atlas'; }
+      else if (TOOLS[id]) { html = TOOLS[id][1](); title = TOOLS[id][0] + ' — AWS AI Atlas'; }
+      else if (decById[id]) { html = pageDecision(id); title = decById[id].title + ' — AWS AI Atlas'; }
       else html = notFound();
     }
     else if (kind === 'p') {
@@ -1068,24 +1860,8 @@
         title = 'AI Engineering Playbooks — AWS AI Atlas';
       }
     }
-    else if (kind === 'gov') {
-      html = pageGovernance();
-      title = 'Enterprise AI Governance & Landing Zones — AWS AI Atlas';
-    }
-    else if (kind === 'ops') {
-      html = pageOperations();
-      title = 'Production AI Operations Centre — AWS AI Atlas';
-    }
-    else if (kind === 'toolkit') {
-      html = pageToolkit();
-      title = 'AI Engineering Manager Toolkit — AWS AI Atlas';
-    }
-    else if (kind === 'labs') {
-      html = pageLabs();
-      title = 'Hands-on Labs & Learning Roadmaps — AWS AI Atlas';
-    }
-    else if (!kind) html = pageHome();
     else html = notFound();
+
     var main = $('#main'); main.innerHTML = html;
     pendingSteppers.forEach(function (spec, i) { mountStepper($('[data-sp="' + i + '"]', main), spec); });
     if (afterRender) afterRender();
@@ -1114,24 +1890,34 @@
     return { type: 'Service', href: '#/s/' + s.id, name: s.name, id: s.id, tag: s.tag, cat: catById[s.cat].name,
       hay: [s.name, s.id, s.tag, s.what, s.ml.join(' '), s.gotchas.join(' '), s.edges.join(' ')].join(' ').toLowerCase() };
   }).concat(A.architectures.map(function (a) {
-    return { type: 'Architecture', href: '#/a/' + a.id, name: a.name, id: a.id, tag: a.short, cat: 'Architecture', hay: (a.name + ' ' + a.short + ' ' + a.why.join(' ')).toLowerCase() };
+    return { type: 'Architecture', href: '#/a/' + a.id, name: a.name, id: a.id, tag: a.short, cat: 'Architecture', hay: (a.name + ' ' + a.short + ' ' + (a.why || []).join(' ')).toLowerCase() };
   })).concat(A.decisions.map(function (d) {
     return { type: 'Decision', href: '#/d/' + d.id, name: d.title, id: d.id, tag: d.question, cat: 'Decision guide',
       hay: plain([d.title, d.question, d.why, d.em.call, d.pe.call, d.redflags.join(' '), d.ask.join(' '), d.rules.map(function (r) { return r.join(' '); }).join(' ')].join(' ')).toLowerCase() };
   })).concat(A.engineeringPlaybooks.map(function (p) {
     return { type: 'Playbook', href: '#/p/' + p.id, name: p.title, id: p.id, tag: p.tag, cat: 'Playbook',
       hay: (p.title + ' ' + p.tag + ' ' + p.intro + ' ' + p.sections.map(function (s) { return s.title + ' ' + (s.body || '') + ' ' + (s.bullets ? s.bullets.join(' ') : ''); }).join(' ')).toLowerCase() };
+  })).concat(A.toolkit.templates.map(function (t) {
+    return { type: 'Template', href: '#/toolkit', name: t.title, id: t.id, tag: t.description, cat: 'Manager Template (' + t.category + ')', hay: (t.title + ' ' + t.category + ' ' + t.description).toLowerCase() };
+  })).concat(A.selector.workloads.map(function (w) {
+    return { type: 'Selector', href: '#/selector', name: w.title, id: w.id, tag: w.keyDecision, cat: 'Service Selector (' + w.workloadProfile + ')', hay: (w.title + ' ' + w.workloadProfile + ' ' + w.keyDecision + ' ' + w.recommended.service).toLowerCase() };
+  })).concat(A.models.registry.map(function (m) {
+    return { type: 'Model', href: '#/models', name: m.name, id: m.id, tag: m.useCase, cat: 'Model Registry (' + m.provider + ')', hay: (m.name + ' ' + m.id + ' ' + m.provider + ' ' + m.useCase).toLowerCase() };
   })).concat([
-    { type: 'Tool', href: '#/d/em', name: 'Decisions for engineering managers', id: 'em', tag: 'Default calls, evidence to ask for, and the guides you lead', cat: 'Decision tab', hay: 'manager budget headcount risk launch gate quick calls' },
-    { type: 'Tool', href: '#/d/pe', name: 'Decisions for principal engineers', id: 'pe', tag: 'Default designs, trade-offs and the tests to demand', cat: 'Decision tab', hay: 'principal architect design review adr trade-off quick calls' },
-    { type: 'Tool', href: '#/d/shaper', name: 'Solution shaper', id: 'shaper', tag: 'Get a starting stack, risks and next decisions for your use case', cat: 'Tool', hay: 'recommend stack wizard rag agent starting point' },
-    { type: 'Tool', href: '#/d/checklists', name: 'Readiness checklists', id: 'checklists', tag: 'Maturity ladder, production readiness and decision record template', cat: 'Tool', hay: 'production readiness launch checklist adr decision record maturity prototype pilot scale' },
-    { type: 'Tool', href: '#/d/calculator', name: 'Cost per task calculator', id: 'calculator', tag: 'Unit economics for LLM features and the levers that cut cost', cat: 'Tool', hay: 'price tokens caching batch unit economics budget' },
-    { type: 'Governance', href: '#/gov', name: 'Enterprise AI Governance & Landing Zones', id: 'gov', tag: 'AWS Control Tower landing zones, network isolation, 8-pillar security framework, tenancy models', cat: 'Governance', hay: 'landing zone control tower multi account hierarchy vpc transit gateway private link security framework tenancy scp aws config' },
-    { type: 'Operations', href: '#/ops', name: 'Production AI Operations Centre', id: 'ops', tag: '10-widget dashboard template, CloudWatch queries, SRE runbooks, postmortem template', cat: 'Operations', hay: 'dashboard cloudwatch query runbook 429 throttling postmortem incident sre latency ttft bedrock' },
-    { type: 'Toolkit', href: '#/toolkit', name: 'AI Engineering Manager Toolkit', id: 'toolkit', tag: 'Use-case assessment, estimation, RACI, RAID, quality gates, skills matrix', cat: 'Toolkit', hay: 'toolkit assessment estimation raci raid quality gates vendor skills executive status report template' },
-    { type: 'Labs', href: '#/labs', name: 'Hands-on Labs & Learning Roadmaps', id: 'labs', tag: 'Role roadmaps, 5 implementation labs, AWS Architecture links', cat: 'Labs', hay: 'labs exercises tutorial roadmaps learn curriculum hands-on' }
+    { type: 'Workspace', href: '#/', name: 'Command Centre', id: 'command', tag: 'Executive portfolio health, attention items, decisions today, daily schedule', cat: 'Command Centre', hay: 'command centre portfolio kpi attention decisions schedule' },
+    { type: 'Workspace', href: '#/delivery', name: 'AI Project Delivery Lifecycle', id: 'delivery', tag: '12 phases from discovery to decommission, 12 active squad initiatives', cat: 'Lifecycle Centre', hay: 'delivery lifecycle phases portfolio roadmap projects gates' },
+    { type: 'Workspace', href: '#/arch-review', name: 'Architecture Review Board (ARB)', id: 'arch-review', tag: '12 review dimensions, risk calculator, systemic risk view across squads', cat: 'Governance', hay: 'arb architecture review risk scoring likelihood impact dimensions' },
+    { type: 'Workspace', href: '#/selector', name: 'AWS AI Service Selection Matrix', id: 'selector', tag: '14 workloads with recommended services and rejection reasons', cat: 'Decision Tool', hay: 'selector service matrix workloads rag agent batch bedrock sagemaker' },
+    { type: 'Workspace', href: '#/models', name: 'Enterprise Model Registry', id: 'models', tag: '16 foundation models, token economics, latency, promotion policy', cat: 'Model Platform', hay: 'models registry claude bedrock nova llama titan lifecycle promotion' },
+    { type: 'Workspace', href: '#/eval', name: 'AI Evaluation & Quality Engineering', id: 'eval', tag: '13 evaluation layers, 28 metrics dictionary, 12 release gates', cat: 'Quality Engineering', hay: 'eval evaluation metrics quality gates golden dataset testing ragas' },
+    { type: 'Workspace', href: '#/finops', name: 'AI FinOps & Unit Economics', id: 'finops', tag: 'Cost per task, 17 cost tiers, 5 scenarios, 17 cost levers, approval gates', cat: 'FinOps', hay: 'finops budget unit economics cost per task calculator pricing levers' },
+    { type: 'Workspace', href: '#/ops', name: 'Production AI Operations & SRE', id: 'ops', tag: '12 reliability principles, SLO error budgets, 14 chaos drills, dashboards', cat: 'Operations', hay: 'ops sre reliability chaos drills runbooks cloudwatch latency errors' },
+    { type: 'Workspace', href: '#/gov', name: 'Security, Governance & Compliance', id: 'gov', tag: 'Control Tower landing zones, NIST AI RMF, ISO 42001, EU AI Act, DPDP Act', cat: 'Security & Governance', hay: 'governance security compliance nist iso eu ai act dpdp scp landing zone' },
+    { type: 'Workspace', href: '#/leadership', name: 'Leadership & Technical Debt', id: 'leadership', tag: '10-domain competency matrix, productivity metrics, 13 tech debts', cat: 'Leadership', hay: 'leadership workforce skills matrix technical debt maturity competency' },
+    { type: 'Workspace', href: '#/toolkit', name: 'Manager Toolkit & 22 Templates', id: 'toolkit', tag: 'RACI, RAID, use case assessment, 22 copyable markdown templates', cat: 'Toolkit', hay: 'toolkit templates raci raid estimation evaluation postmortem adr' },
+    { type: 'Workspace', href: '#/labs', name: 'Hands-on Labs & Roadmaps', id: 'labs', tag: 'Role roadmaps, 5 implementation labs, AWS Architecture links', cat: 'Labs', hay: 'labs exercises tutorial roadmaps learn curriculum hands-on' }
   ]);
+
   function openSearch() { overlay.hidden = false; q.value = ''; runSearch(); q.focus(); }
   function closeSearch() { overlay.hidden = true; }
   function runSearch() {
@@ -1145,13 +1931,13 @@
         if (!s) ok = false; score += s;
       });
       return { it: it, score: terms.length ? (ok ? score : 0) : 1 };
-    }).filter(function (h) { return h.score > 0; }).sort(function (a, b) { return b.score - a.score || a.it.name.localeCompare(b.it.name); }).slice(0, 12);
+    }).filter(function (h) { return h.score > 0; }).sort(function (a, b) { return b.score - a.score || a.it.name.localeCompare(b.it.name); }).slice(0, 14);
     sel = 0; paint();
   }
   function paint() {
     resultsEl.innerHTML = hits.length ? hits.map(function (h, i) {
       return '<li role="option"><a href="' + h.it.href + '" class="' + (i === sel ? 'sel' : '') + '"><b>' + esc(h.it.name) + ' <small style="font-weight:400;color:var(--muted)">· ' + esc(h.it.cat) + '</small></b><span>' + esc(h.it.tag) + '</span></a></li>';
-    }).join('') : '<li class="none">No matches. Try a service name or a concept like “vector” or “throttling”.</li>';
+    }).join('') : '<li class="none">No matches. Try a service, model, template, or keyword like “eval”, “risk”, or “budget”.</li>';
   }
   $('#searchBtn').addEventListener('click', openSearch);
   overlay.addEventListener('click', function (e) { if (e.target === overlay || e.target.closest('a')) closeSearch(); });

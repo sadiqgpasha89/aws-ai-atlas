@@ -641,3 +641,76 @@ window.ATLAS.engineeringPlaybooks = [
     ]
   }
 ];
+
+window.ATLAS.workloadGates = {
+  rag: {
+    title: "RAG Production Readiness Gate",
+    workload: "Retrieval-Augmented Generation Assistants",
+    description: "Mandatory quality, security, and freshness gates required before shipping a RAG system to production.",
+    items: [
+      { id: "rag-g1", title: "Source Documents Approved & Lineage Verified", desc: "Source documents in [[s3]] are approved by domain owners; duplicate and expired documents purged." },
+      { id: "rag-g2", title: "Document ACLs Preserved at Retrieval Time", desc: "User permissions mapped to vector metadata filters; unauthorized documents filtered before LLM context injection." },
+      { id: "rag-g3", title: "Event-Driven Data Refresh Implemented", desc: "S3 ObjectCreated/ObjectRemoved events trigger automated chunk re-indexing and tombstoning in [[opensearch]]." },
+      { id: "rag-g4", title: "Retrieval Benchmark Established", desc: "Recall@5 >= 0.85 and MRR >= 0.75 verified on frozen golden dataset using hybrid search (BM25 + k-NN)." },
+      { id: "rag-g5", title: "Cross-Encoder Reranking Evaluated", desc: "Cohere or Bedrock Reranker evaluated on top-25 chunks; precision gain justifies latency budget." },
+      { id: "rag-g6", title: "Groundedness (Faithfulness) Tested", desc: "Measured Groundedness >= 95.0% on 200+ golden cases; zero critical hallucinations detected." },
+      { id: "rag-g7", title: "Citation Attribution Accuracy Tested", desc: "100% of generated claims link to verifiable document title, page, and chunk references." },
+      { id: "rag-g8", title: "Prompt Injection & Poisoning Defense Active", desc: "[[bedrock-guardrails]] filters malicious prompts and indirect injection hidden inside retrieved documents." },
+      { id: "rag-g9", title: "Multi-Tenant Data Isolation Verified", desc: "Cross-tenant retrieval tests prove 0% possibility of Tenant A retrieving Tenant B's confidential chunks." },
+      { id: "rag-g10", title: "Index Rollback & Disaster Recovery Tested", desc: "Automated snapshot restore and parallel index rebuild tested in staging (< 30 minutes recovery)." }
+    ]
+  },
+  agent: {
+    title: "Agentic AI Production Readiness Gate",
+    workload: "Autonomous & Multi-Step Agent Workflows",
+    description: "Strict safety, autonomy, budget, and authorization controls required before deploying agentic AI workloads.",
+    items: [
+      { id: "agt-g1", title: "Agent Autonomy Level Documented (L1-L4)", desc: "Permitted autonomous actions vs actions requiring human authorization documented and approved by InfoSec." },
+      { id: "agt-g2", title: "Tool Permissions Scoped via Least-Privilege IAM", desc: "Agent execution roles restricted to specific ARNs with session policies; no wildcard `*` permissions." },
+      { id: "agt-g3", title: "Maximum Execution Step Limit Enforced", desc: "Hard ceiling enforced in code: maximum 10 reasoning steps before deterministic agent termination." },
+      { id: "agt-g4", title: "Maximum Token & Cost Budget Enforced", desc: "Hard ceiling of 50,000 total tokens per task; circuit breaker terminates runaway reasoning loops." },
+      { id: "agt-g5", title: "Per-Tool Execution Timeouts Configured", desc: "Strict timeouts (5s per tool call, 30s total) prevent hanging HTTP connections or database locks." },
+      { id: "agt-g6", title: "Exponential Backoff & Loop Protection Verified", desc: "Loop breaker detects identical consecutive tool calls; trips circuit breaker after 3 repeats." },
+      { id: "agt-g7", title: "Idempotency Enforced on Action Tools", desc: "State-changing tools (payments, mutations) require client request tokens to prevent duplicate execution." },
+      { id: "agt-g8", title: "Human Approval Gate for Sensitive Tools", desc: "Irreversible actions gated behind [[stepfunctions]] task token callback requiring human manager click." },
+      { id: "agt-g9", title: "Durable State Checkpointing Implemented", desc: "Intermediate agent memory and tool outputs persisted to [[dynamodb]] to enable workflow resumption." },
+      { id: "agt-g10", title: "Distributed Trace Correlation Active", desc: "OpenTelemetry `traceparent` headers injected and logged to [[cloudwatch]] for end-to-end auditability." },
+      { id: "agt-g11", title: "Task Completion Benchmark Passed", desc: "Goal Completion Rate >= 95.0% and Tool Argument Accuracy >= 98.0% on agent golden test suite." },
+      { id: "agt-g12", title: "Emergency Kill Switch Operational", desc: "Feature flag or AppConfig parameter tested; disables autonomous actions organization-wide in < 30 seconds." }
+    ]
+  },
+  ml: {
+    title: "Classic ML & Fine-Tuning Production Gate",
+    workload: "Custom Models, Tabular ML & Fine-Tuned Endpoints",
+    description: "MLOps operational gates required for model registries, feature stores, drift monitoring, and endpoints.",
+    items: [
+      { id: "ml-g1", title: "Training Data Validation & Lineage Logged", desc: "Input dataset schema validated, training/validation splits verified, and data lineage logged in S3." },
+      { id: "ml-g2", title: "Model Accuracy & F1 Benchmarks Achieved", desc: "Model evaluation scorecard meets baseline thresholds on out-of-sample holdout test sets." },
+      { id: "ml-g3", title: "Baseline Data & Concept Drift Profile Created", desc: "Baseline statistical distributions registered in [[sm-monitor|SageMaker Model Monitor]]." },
+      { id: "ml-g4", title: "Feature Pipelines Operational & Synchronized", desc: "Online feature serving (< 10ms) in [[sm-feature-store]] synchronized with offline data lake." },
+      { id: "ml-g5", title: "Model Versioned in Model Registry", desc: "Artifacts, container URI, and hyperparameters approved in SageMaker Model Registry." },
+      { id: "ml-g6", title: "Shadow Deployment / Canary Configured", desc: "Shadow traffic testing verifies model behaves identically to production predecessor under live load." },
+      { id: "ml-g7", title: "Bias, Fairness & Explainability Audited", desc: "Feature attribution and demographic fairness audited using SageMaker Clarify." },
+      { id: "ml-g8", title: "Inference Latency P99 Tested Under Peak Load", desc: "Endpoint autoscaling verified from 1 to N instances under 2x simulated peak concurrency." },
+      { id: "ml-g9", title: "Automated Rollback Trigger Configured", desc: "CloudWatch alarm on ModelLatency or 5xx error rate instantly triggers endpoint rollback." },
+      { id: "ml-g10", title: "Automated Retraining Trigger Documented", desc: "EventBridge rule and Step Functions pipeline scheduled to retrain when drift metric triggers alarm." }
+    ]
+  },
+  api: {
+    title: "AI API Gateway Production Readiness Gate",
+    workload: "Inference APIs, Microservices & Streaming Frontends",
+    description: "Availability, rate-limiting, concurrency, and security gates for enterprise AI request endpoints.",
+    items: [
+      { id: "api-g1", title: "Authentication & Tenant Identity Enforced", desc: "[[cognito]] JWT tokens or IAM SigV4 enforced on [[apigw|API Gateway]]; tenant ID extracted for billing." },
+      { id: "api-g2", title: "Usage Plans & API Key Throttling Active", desc: "Rate limits (RPS) and burst limits configured per API client to prevent noisy-neighbor starvation." },
+      { id: "api-g3", title: "AWS Service Quotas Validated for Peak", desc: "Bedrock model concurrency, Lambda concurrency, and VPC NAT Gateway limits verified in region." },
+      { id: "api-g4", title: "P95 Streaming Latency (TTFT) Under 2.5s", desc: "Server-Sent Events (SSE) streaming verified under load; P95 Time to First Token < 2.5 seconds." },
+      { id: "api-g5", title: "Client Retry with Full Jitter Implemented", desc: "Client SDKs configured to retry on HTTP 429 and 503 using randomized exponential backoff." },
+      { id: "api-g6", title: "Circuit Breakers on Downstream AI Services", desc: "Trip circuit breaker when downstream Bedrock or tool dependencies fail 5 consecutive times." },
+      { id: "api-g7", title: "WAF DDoS & Prompt Injection Rules Enabled", desc: "[[waf|AWS WAF]] web ACL deployed with AWS Managed Core Rule Set and custom rate-based IP rules." },
+      { id: "api-g8", title: "Streaming SSE Buffer Handling Tested", desc: "Frontend client handles network disconnects gracefully; resumes streaming without dropping context." },
+      { id: "api-g9", title: "Strict Payload Size & Timeout Limits Enforced", desc: "Inbound request body capped at 10MB; gateway timeout set to 29s with async queue fallback." },
+      { id: "api-g10", title: "Multi-Region DNS Failover Verified", desc: "[[route53]] latency and health-check failover route traffic to backup region in < 60 seconds." }
+    ]
+  }
+};
