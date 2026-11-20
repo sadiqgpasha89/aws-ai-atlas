@@ -298,6 +298,11 @@ for (const f of fs.readdirSync(path.join(root, 'assets/lib')).concat(fs.readdirS
   if (at < 0) err(`${rel} is not loaded by index.html`); else if (at > appAt) err(`${rel} must load before assets/app.js`);
 }
 
+// Do not claim verification that nothing records.
+for (const f of ['scripts/build_app.mjs', ...scripts]) {
+  if (/Verified\s+20\d\d/.test(fs.readFileSync(path.join(root, f), 'utf8'))) err(`${f}: contains an unsubstantiated "Verified <year>" claim; record a source and date instead`);
+}
+
 const words = A.services.reduce((n, s) => n + JSON.stringify(s).split(/\s+/).length, 0);
 console.log(`${A.categories.length} categories, ${A.services.length} services, ${A.architectures.length} architectures, ${A.decisions.length} decision guides (+ em/pe role tabs), ${A.readiness.reduce((n, g) => n + g.items.length, 0)} readiness items, ${combos} shaper combinations checked, ~${words} words in services`);
 if (errs.length) { console.error(`\n${errs.length} problem(s):`); errs.forEach(e => console.error(' - ' + e)); process.exit(1); }

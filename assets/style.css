@@ -541,3 +541,4 @@ a.wkpi:hover{border-color:var(--accent);transform:translate(1px,1px)}
 .wmatrix .mnum{font:700 11px var(--mono);fill:var(--accent-ink);text-anchor:middle}
 @media (max-width:900px){.wcalc{grid-template-columns:minmax(0,1fr)}.wresults{position:static}}
 @media print{.top,.side,.foot,.wsubnav,.btns,.wfilters,.skip{display:none!important}.wkpi{box-shadow:none}.wresults{position:static}main{padding:0!important}}
+a.freshness-badge{text-decoration:none}

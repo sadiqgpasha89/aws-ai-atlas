@@ -2,7 +2,7 @@
 
 This file records what was built from the V2 implementation plan (`aws-ai-atlas-plan.md`), what is partly done, and what has not been started. It is the source of truth for "what does the Atlas do today". Update it with every change.
 
-Last updated: 2026-11-20.
+Last updated: 2026-11-20 (second iteration: content labelling).
 
 ## Summary
 
@@ -24,13 +24,14 @@ Done in this iteration: Phase 0 (foundations) and the Phase 1 management core (p
 | Sample data mode, clearly labelled, separate from user data | Done | `data/demo.js`, `assets/ui/common.js` |
 | CSV (formula-injection safe) and Markdown exports | Done | `assets/lib/exporters.js` |
 | Unit tests (61) and CI gate | Done | `tests/`, `.github/workflows/pages.yml` |
+| Honest content status: removed the unsubstantiated "AWS Verified 2026" badges, added a notice on every reference page and a `#/about/content` page; `check.mjs` fails if a "Verified <year>" claim reappears | Done | `assets/ui/content.js`, `scripts/check.mjs` |
 | Accessibility basics (labels, keyboard, text+symbol status, live regions) | Done, checked by script and by hand on the main pages | see `docs/testing/testing.md` |
 
 ## Not done
 
 These parts of the plan were **not** implemented and should not be assumed to exist:
 
-- Source and verification metadata (`sources`, `lastVerified`, confidence) on the existing technical content (services, architectures, decisions, models). The existing content and its numbers have **not** been re-verified in this iteration.
+- Per-claim source and verification metadata (`sources`, `lastVerified`, confidence) on the existing technical content (services, architectures, decisions, models). Pages now say plainly that figures are unverified, but nothing has been re-verified and no verification dates are recorded.
 - Model registry and evaluation tracking as editable records; evaluation run results; production health or SLO data entry.
 - Team capacity and skills records; hiring or staffing planning.
 - Stakeholder, governance/compliance and audit-evidence records; incident and postmortem records.
@@ -43,7 +44,7 @@ These parts of the plan were **not** implemented and should not be assumed to ex
 ## Known limits and caveats
 
 - Data lives in one browser's `localStorage`. It is not encrypted, not synced and not shared. Clearing site data deletes it; the export file is the backup.
-- Older static pages (Delivery, FinOps, Leadership, Toolkit, SRE, Eval, Security) still contain hand-written reference content. Some of it contains illustrative figures. The original static Command Centre is kept at `#/command/sample` behind an "ILLUSTRATIVE STATIC CONTENT" banner. The other static pages have not yet been relabelled or audited for illustrative numbers.
+- Older static pages (Delivery, FinOps, Leadership, Toolkit, SRE, Eval, Security) still contain hand-written reference content. Some of it contains illustrative figures. The original static Command Centre is kept at `#/command/sample` behind an "ILLUSTRATIVE STATIC CONTENT" banner. Every other reference page now shows a notice ("Figures not verified" or "Illustrative guidance"), but individual figures have not been audited one by one.
 - Calculators use only numbers the user types. Example values prefilled in the forms are labelled as examples and are not AWS prices. Pricing is never fetched.
 - Dates use the local clock of the browser and `YYYY-MM-DD` strings; no time-zone handling beyond that.
 

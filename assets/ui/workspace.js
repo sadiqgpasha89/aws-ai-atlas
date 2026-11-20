@@ -124,6 +124,7 @@
       { type: 'Workspace', href: '#/registers/decisions', name: 'Decision log', id: 'decisions', tag: 'Decisions with context, options, rationale and review date', cat: 'My workspace', hay: KW + ' decision log adr rationale' },
       { type: 'Workspace', href: '#/registers/actions', name: 'Action tracker', id: 'actions', tag: 'Actions with owner and due date', cat: 'My workspace', hay: KW + ' actions tasks overdue owner' },
       { type: 'Workspace', href: '#/workspace', name: 'Workspace settings, export and import', id: 'workspace', tag: 'Sample data, JSON export, validated import, delete', cat: 'My workspace', hay: KW + ' export import backup reset sample privacy storage' },
+      { type: 'About', href: '#/about/content', name: 'Content status and verification', id: 'content-status', tag: 'What is and is not verified in this atlas', cat: 'About', hay: 'content status verified verification sources accuracy disclaimer' },
       { type: 'Calculator', href: '#/calc/saved', name: 'Saved scenarios', id: 'saved-scenarios', tag: 'Compare scenarios you saved from the calculators', cat: 'Calculators', hay: 'calculator scenario compare saved' }
     ];
     (A.ui.calcIds || []).forEach(function (c) { e.push({ type: 'Calculator', href: '#/calc/' + c.id, name: c.title + ' calculator', id: 'calc-' + c.id, tag: c.blurb, cat: 'Calculators', hay: 'calculator finops cost estimate roi ' + c.title.toLowerCase() }); });

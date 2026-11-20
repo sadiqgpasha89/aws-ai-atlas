@@ -387,7 +387,7 @@
       h += '<a class="card" style="--h:25" href="#/a/' + a.id + '">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
           '<div class="mini">Reference Architecture</div>' +
-          '<span class="freshness-badge">AWS Verified 2026</span>' +
+          '<span class="freshness-badge needs-review" title="No verification date is recorded for this content. Confirm against the AWS documentation.">Reference · not verified</span>' +
         '</div>' +
         '<h3>' + esc(a.name) + '</h3>' +
         '<p>' + esc(a.short) + '</p>' +
@@ -400,7 +400,7 @@
   function pageArch(id) {
     var a = archById[id]; if (!a) return notFound();
     var h = '<div class="eyebrow"><a href="#/">Atlas</a> / <a href="#/a">Architectures</a></div><h1>' + esc(a.name) + '</h1><p class="lede">' + esc(a.short) + '</p>';
-    h += '<div style="margin:8px 0 16px"><span class="freshness-badge">AWS Architecture Center Verified 2026</span></div>';
+    h += '<div style="margin:8px 0 16px"><a class="freshness-badge needs-review" href="#/about/content" title="No verification date is recorded for this content. Confirm against the AWS documentation.">Reference · not verified · what this means</a></div>';
     h += '<div class="callout"><b>Use it when</b>' + fmt(a.when) + '</div>';
     h += '<h2>Walkthrough</h2><p>Click a step, or press Play. Every box is a link to its service page.</p>' + stepperHost({ flow: a.flow, steps: a.steps, hue: 25 });
     h += '<div class="lists two" style="margin-top:34px"><div class="box"><h3>Why this shape</h3>' + ul(a.why) + '</div><div class="box warn"><h3>How it fails</h3>' + ul(a.fails) + '</div></div>';
@@ -1872,6 +1872,7 @@
       }
     }
     else html = notFound();
+    if (A.contentNotice && html.indexOf('<h1>Not found') !== 0) html = A.contentNotice(kind, id) + html;
 
     var main = $('#main'); main.innerHTML = html;
     pendingSteppers.forEach(function (spec, i) { mountStepper($('[data-sp="' + i + '"]', main), spec); });
