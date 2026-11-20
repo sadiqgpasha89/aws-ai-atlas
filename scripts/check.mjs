@@ -298,6 +298,19 @@ for (const f of fs.readdirSync(path.join(root, 'assets/lib')).concat(fs.readdirS
   if (at < 0) err(`${rel} is not loaded by index.html`); else if (at > appAt) err(`${rel} must load before assets/app.js`);
 }
 
+// Model registry provenance: sources must be https links; a verification date needs sources and must be a real date.
+{
+  const pv = A.models.provenance;
+  if (!pv) err('models.provenance is missing');
+  else {
+    if (pv.verifiedOn !== null && !/^\d{4}-\d{2}-\d{2}$/.test(pv.verifiedOn)) err('models.provenance.verifiedOn must be null or YYYY-MM-DD');
+    if (!Array.isArray(pv.sources) || !pv.sources.length) err('models.provenance.sources must list at least one source');
+    for (const x of pv.sources || []) if (!/^https:\/\/(docs\.aws\.amazon\.com|aws\.amazon\.com)\//.test(x.url || '') || !x.label) err(`models.provenance source needs a label and an https AWS url: ${JSON.stringify(x)}`);
+    const keys = new Set(A.models.registry.flatMap(m => Object.keys(m)));
+    for (const f of pv.illustrativeFields || []) if (!keys.has(f)) err(`models.provenance.illustrativeFields names unknown field ${f}`);
+  }
+}
+
 // Do not claim verification that nothing records.
 for (const f of ['scripts/build_app.mjs', ...scripts]) {
   if (/Verified\s+20\d\d/.test(fs.readFileSync(path.join(root, f), 'utf8'))) err(`${f}: contains an unsubstantiated "Verified <year>" claim; record a source and date instead`);
