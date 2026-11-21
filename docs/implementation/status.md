@@ -2,7 +2,7 @@
 
 This file records what was built from the V2 implementation plan (`aws-ai-atlas-plan.md`), what is partly done, and what has not been started. It is the source of truth for "what does the Atlas do today". Update it with every change.
 
-Last updated: 2026-11-20 (second iteration: content labelling).
+Last updated: 2026-11-21 (v2.0: navigation redesign, minimalist theme, glossary).
 
 ## Summary
 
@@ -27,6 +27,8 @@ Done in this iteration: Phase 0 (foundations) and the Phase 1 management core (p
 | Honest content status: removed the unsubstantiated "AWS Verified 2026" badges, added a notice on every reference page and a `#/about/content` page; `check.mjs` fails if a "Verified <year>" claim reappears | Done | `assets/ui/content.js`, `scripts/check.mjs` |
 | Model registry provenance: sources, "last verified: not recorded", and an "example" mark on columns that describe a hypothetical organisation; `check.mjs` validates the provenance block | Done | `data/models.js`, `scripts/check.mjs` |
 | Model registry partial verification (2026-11-20): each model has a `check` result with source and note. 4 models carry AWS lifecycle notices (3 past their end-of-life date in the listed Regions), 2 prices confirmed, 1 price differs, 9 not confirmed or example only | Done, partial | `data/models.js`, `scripts/check.mjs` |
+| Site structure: Home, Learn, Lead, Workspace sections; section sidebar; breadcrumbs; on-this-page links | Done | `assets/ui/home.js` (`A.ia`), `scripts/build_app.mjs` (`renderSide`, `crumbs`, `addToc`) |
+| Glossary of 49 terms with AWS mapping, searchable, validated | Done | `data/glossary.js`, `assets/ui/home.js`, `scripts/check.mjs` |
 | Accessibility basics (labels, keyboard, text+symbol status, live regions) | Done, checked by script and by hand on the main pages | see `docs/testing/testing.md` |
 
 ## Not done

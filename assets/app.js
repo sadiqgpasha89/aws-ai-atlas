@@ -16,14 +16,14 @@
   function fmt(s) {
     return esc(s)
       .replace(/\`([^\`]+)\`/g, '<code>$1</code>')
-      .replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>')
-      .replace(/\\\[\\\[([a-z0-9-]+)(?:\\|([^\\\]]+))?\\\]\\\]/g, function (m, id, label) {
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\[\[([a-z0-9-]+)(?:\|([^\]]+))?\]\]/g, function (m, id, label) {
         var sv = byId[id];
         if (!sv) return label || id;
         return '<a href="#/s/' + id + '">' + (label || sv.name) + '</a>';
       });
   }
-  function paras(s) { return String(s || '').split(/\\n\\n+/).map(function (p) { return '<p>' + fmt(p) + '</p>'; }).join(''); }
+  function paras(s) { return String(s || '').split(/\n\n+/).map(function (p) { return '<p>' + fmt(p) + '</p>'; }).join(''); }
   function ul(items) { return '<ul>' + (items || []).map(function (i) { return '<li>' + fmt(i) + '</li>'; }).join('') + '</ul>'; }
   function hueOf(catId) { return catById[catId] ? catById[catId].hue : 25; }
 
@@ -1279,7 +1279,7 @@
 
   function doorBadge(d) { var x = DOOR[d.door]; return '<span class="door ' + d.door + '" title="' + esc(x[1]) + '">' + x[0] + '</span>'; }
   function plain(s) {
-    return String(s || '').replace(/\\\[\\\[([a-z0-9-]+)(?:\\|([^\\\]]+))?\\\]\\\]/g, function (m, id, label) { return label || (byId[id] ? byId[id].name : id); });
+    return String(s || '').replace(/\[\[([a-z0-9-]+)(?:\|([^\]]+))?\]\]/g, function (m, id, label) { return label || (byId[id] ? byId[id].name : id); });
   }
 
   var roleById = {}; A.roles.forEach(function (r) { roleById[r.id] = r; });
@@ -1733,59 +1733,83 @@
     return h;
   }
 
-  function notFound() { return '<h1>Not found</h1><p class="lede">That page does not exist. <a href="#/">Back to the Command Centre</a>.</p>'; }
+  function notFound() { return '<h1>Not found</h1><p class="lede">That page does not exist. <a href="#/">Back to the home page</a> or press <kbd>/</kbd> to search.</p>'; }
 
   /* ==========================================================================
      SIDEBAR NAVIGATION
      ========================================================================== */
   function nl(href, label, cur) { return '<a class="nl" href="' + href + '"' + (cur ? ' aria-current="page"' : '') + '>' + label + '</a>'; }
+  function tree(label, hue, open, n, items) {
+    return '<details' + (open ? ' open' : '') + '><summary style="--h:' + hue + '"><span class="dot"></span><span class="st">' + label + '</span><span class="n">' + n + '</span></summary><ul>' + items + '</ul></details>';
+  }
+  function li(href, label, cur) { return '<li><a href="' + href + '"' + (cur ? ' aria-current="page"' : '') + '>' + esc(label) + '</a></li>'; }
+  /* The sidebar shows only the current section, so it stays short. On small screens it also carries the section switcher. */
   function renderSide(kind, id) {
-    var cur = kind === 's' && byId[id] ? byId[id].cat : (kind === 'c' ? id : null);
-    var curTheme = kind === 'd' && decById[id] ? decById[id].theme : null;
+    var IA = A.ia, sec = IA.sectionOf(kind);
+    var h = '<nav class="side-sec" aria-label="Sections">' + IA.SECTIONS.map(function (S) {
+      return '<a href="' + S.href + '"' + (S.id === sec ? ' aria-current="true"' : '') + '>' + S.label + '</a>';
+    }).join('') + '</nav>';
 
-    var h = (A.sidebarExtra ? A.sidebarExtra(kind, id) : '') + '<h3>Command & Operations</h3>' +
-      nl('#/', 'Command Centre', !kind || kind === 'command') +
-      nl('#/delivery', 'AI Project Lifecycle (12)', kind === 'delivery') +
-      nl('#/arch-review', 'Architecture Review Board', kind === 'arch-review') +
-      nl('#/selector', 'Service Selector Matrix', kind === 'selector') +
-      nl('#/models', 'Model Registry (16)', kind === 'models') +
-      nl('#/eval', 'Eval & Quality Engineering', kind === 'eval') +
-      nl('#/finops', 'FinOps & Unit Economics', kind === 'finops') +
-      nl('#/ops', 'Production SRE & Ops', kind === 'ops') +
-      nl('#/gov', 'Security & Compliance', kind === 'gov') +
-      nl('#/leadership', 'Leadership & Workforce', kind === 'leadership') +
-      nl('#/toolkit', 'Manager Templates (22)', kind === 'toolkit');
-
-    h += '<h3>Architecture & Decisions</h3>' +
-      nl('#/a', 'Reference Architectures (' + A.architectures.length + ')', kind === 'a' && !id) +
-      nl('#/d', 'Decision Centre (' + A.decisions.length + ')', kind === 'd' && !id) +
-      nl('#/p', 'Engineering Playbooks (' + A.engineeringPlaybooks.length + ')', kind === 'p' && !id) +
-      nl('#/services', 'Services Catalogue (' + A.services.length + ')', kind === 'services' || (kind === 'c' && !id)) +
-      nl('#/labs', 'Labs & Roadmaps', kind === 'labs');
-
-    h += '<h3>Decisions & Tools</h3>' +
-      nl('#/d/em', 'For engineering managers', kind === 'd' && id === 'em') +
-      nl('#/d/pe', 'For principal engineers', kind === 'd' && id === 'pe') +
-      nl('#/d/shaper', 'Solution shaper', kind === 'd' && id === 'shaper') +
-      nl('#/d/checklists', 'Readiness checklists', kind === 'd' && id === 'checklists') +
-      nl('#/d/calculator', 'Cost per task', kind === 'd' && id === 'calculator');
-
-    A.decisionThemes.forEach(function (t) {
-      var list = A.decisions.filter(function (d) { return d.theme === t.id; });
-      h += '<details' + (curTheme === t.id ? ' open' : '') + '><summary style="--h:' + THEME_HUE[t.id] + '"><span class="dot"></span><span style="flex:1">' + esc(t.name) + '</span><span class="n">' + list.length + '</span></summary><ul>' +
-        list.map(function (d) { return '<li><a href="#/d/' + d.id + '"' + (kind === 'd' && id === d.id ? ' aria-current="page"' : '') + '>' + esc(d.title) + '</a></li>'; }).join('') + '</ul></details>';
-    });
-
-    h += '<h3>Architectures (' + A.architectures.length + ')</h3>';
-    h += '<details' + (kind === 'a' && id ? ' open' : '') + '><summary style="--h:25"><span class="dot"></span><span>All Architectures</span><span class="n">' + A.architectures.length + '</span></summary><ul>' +
-      A.architectures.map(function (a) { return '<li><a href="#/a/' + a.id + '"' + (kind === 'a' && id === a.id ? ' aria-current="page"' : '') + '>' + esc(a.name) + '</a></li>'; }).join('') + '</ul></details>';
-
-    h += '<h3>Services by Category (' + A.services.length + ')</h3>';
-    A.categories.forEach(function (c) {
-      h += '<details' + (cur === c.id ? ' open' : '') + '><summary style="--h:' + c.hue + '"><span class="dot"></span><a href="#/c/' + c.id + '"' + (kind === 'c' && id === c.id ? ' aria-current="page"' : '') + '>' + esc(c.name) + '</a><span class="n">' + c.items.length + '</span></summary><ul>' +
-        c.items.map(function (s) { return '<li><a href="#/s/' + s.id + '"' + (kind === 's' && id === s.id ? ' aria-current="page"' : '') + '>' + esc(s.name) + '</a></li>'; }).join('') + '</ul></details>';
-    });
+    if (sec === 'learn') {
+      h += '<h3>Learn</h3>' + nl('#/learn', 'Overview', kind === 'learn');
+      IA.PAGES.learn.forEach(function (p) { h += nl(p.href, p.title, kind === p.kind && (!id || kind === 'glossary')); });
+      h += '<h3>Decision tools</h3>' +
+        nl('#/d/em', 'For engineering managers', kind === 'd' && id === 'em') +
+        nl('#/d/pe', 'For principal engineers', kind === 'd' && id === 'pe') +
+        nl('#/d/shaper', 'Solution shaper', kind === 'd' && id === 'shaper') +
+        nl('#/d/checklists', 'Readiness checklists', kind === 'd' && id === 'checklists') +
+        nl('#/d/calculator', 'Cost per task', kind === 'd' && id === 'calculator');
+      if (kind === 's' || kind === 'c' || kind === 'services') {
+        var cur = kind === 's' && byId[id] ? byId[id].cat : (kind === 'c' ? id : null);
+        h += '<h3>Services by category</h3>';
+        A.categories.forEach(function (c) {
+          h += tree('<a href="#/c/' + c.id + '"' + (kind === 'c' && id === c.id ? ' aria-current="page"' : '') + '>' + esc(c.name) + '</a>', c.hue, cur === c.id, c.items.length,
+            c.items.map(function (s) { return li('#/s/' + s.id, s.name, kind === 's' && id === s.id); }).join(''));
+        });
+      }
+      if (kind === 'a') h += '<h3>Architectures</h3><ul class="flat">' + A.architectures.map(function (a) { return li('#/a/' + a.id, a.name, id === a.id); }).join('') + '</ul>';
+      if (kind === 'p') h += '<h3>Playbooks</h3><ul class="flat">' + A.engineeringPlaybooks.map(function (p) { return li('#/p/' + p.id, p.title, id === p.id); }).join('') + '</ul>';
+      if (kind === 'd') {
+        var curTheme = decById[id] ? decById[id].theme : null;
+        h += '<h3>Guides by theme</h3>';
+        A.decisionThemes.forEach(function (t) {
+          var list = A.decisions.filter(function (d) { return d.theme === t.id; });
+          h += tree(esc(t.name), THEME_HUE[t.id], curTheme === t.id, list.length, list.map(function (d) { return li('#/d/' + d.id, d.title, id === d.id); }).join(''));
+        });
+      }
+    } else if (sec === 'lead') {
+      h += '<h3>Lead</h3>' + nl('#/lead', 'Overview', kind === 'lead');
+      IA.PAGES.lead.forEach(function (p) { h += nl(p.href, p.title, kind === p.kind); });
+      h += '<h3>Related</h3>' + nl('#/command/sample', 'Example command centre', false) + nl('#/d/em', 'Decisions for managers', false) + nl('#/d/checklists', 'Readiness checklists', false);
+    } else if (sec === 'workspace') {
+      h += A.sidebarExtra ? A.sidebarExtra(kind, id) : '';
+    } else {
+      IA.SECTIONS.slice(1).forEach(function (S) {
+        h += '<h3>' + S.label + '</h3>';
+        IA.PAGES[S.id].forEach(function (p) { h += nl(p.href, p.title, false); });
+      });
+      h += '<h3>About</h3>' + nl('#/about/content', 'Content status', kind === 'about');
+    }
     $('#side').innerHTML = h;
+    $$('.top-links a[data-sec]').forEach(function (a) { if (a.getAttribute('data-sec') === sec) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+  }
+
+  /* Breadcrumb trail above every page except Home and "not found". */
+  function crumbs(kind, id, title) {
+    var t = A.ia.trail(kind, id); if (!t.length && A.ia.sectionOf(kind) === 'home') return '';
+    return '<nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a>' + t.map(function (c) { return '<span aria-hidden="true">/</span><a href="' + c[1] + '">' + esc(c[0]) + '</a>'; }).join('') +
+      '<span aria-hidden="true">/</span><span aria-current="page">' + esc(title.split(' — ')[0]) + '</span></nav>';
+  }
+  /* "On this page" jump list for long pages. Buttons, not anchors, because the hash is the router. */
+  function addToc(main) {
+    if ($('.tabs', main) || $('.home', main)) return;
+    var hs = $$('h2', main).filter(function (x) { return x.offsetParent !== null && x.textContent.trim(); });
+    if (hs.length < 4) return;
+    var nav = document.createElement('nav'); nav.className = 'toc'; nav.setAttribute('aria-label', 'On this page');
+    nav.innerHTML = '<span class="toc-l">On this page</span>' + hs.map(function (x, i) { return '<button type="button" data-toc="' + i + '">' + esc(x.textContent.trim()) + '</button>'; }).join('');
+    nav.addEventListener('click', function (e) { var b = e.target.closest('[data-toc]'); if (b) { var t = hs[+b.getAttribute('data-toc')]; t.setAttribute('tabindex', '-1'); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); t.focus({ preventScroll: true }); } });
+    var anchor = $('.lede', main) || $('h1', main); if (!anchor) return;
+    anchor.parentNode.insertBefore(nav, anchor.nextSibling);
   }
 
   /* ==========================================================================
@@ -1802,7 +1826,7 @@
     pendingSteppers = []; afterRender = null;
     var html, title = 'AWS AI Atlas — AI Engineering Management Operating System';
 
-    var ext = A.routes && A.routes[kind || 'command'];
+    var ext = A.routes && A.routes[kind || 'home'];
     if (ext) {
       var out = ext.render(parts.slice(1), query);
       html = out.html; title = out.title || title;
@@ -1890,11 +1914,14 @@
       }
     }
     else html = notFound();
-    if (A.contentNotice && html.indexOf('<h1>Not found') !== 0) html = A.contentNotice(kind, id) + html;
+    var found = html.indexOf('<h1>Not found') !== 0;
+    if (A.contentNotice && found) html = A.contentNotice(kind, id) + html;
+    if (found) html = crumbs(kind, id, title) + html;
 
     var main = $('#main'); main.innerHTML = html;
     pendingSteppers.forEach(function (spec, i) { mountStepper($('[data-sp="' + i + '"]', main), spec); });
     if (afterRender) afterRender();
+    if (found) addToc(main);
     renderSide(kind, id);
     document.title = title;
     window.scrollTo(0, 0);

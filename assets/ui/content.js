@@ -11,7 +11,7 @@
   };
   /* kind (first hash segment) -> class */
   var KINDS = { models: VOLATILE, finops: VOLATILE, selector: VOLATILE, s: VOLATILE, c: VOLATILE, services: VOLATILE,
-    delivery: GUIDE, eval: GUIDE, ops: GUIDE, gov: GUIDE, leadership: GUIDE, toolkit: GUIDE, labs: GUIDE, 'arch-review': GUIDE, a: GUIDE, d: GUIDE, p: GUIDE };
+    delivery: GUIDE, eval: GUIDE, ops: GUIDE, gov: GUIDE, leadership: GUIDE, toolkit: GUIDE, labs: GUIDE, 'arch-review': GUIDE, a: GUIDE, d: GUIDE, p: GUIDE, glossary: GUIDE };
 
   A.contentNotice = function (kind) {
     var cls = KINDS[kind]; if (!cls) return '';
@@ -23,7 +23,7 @@
       ['Services catalogue and service pages', 'services, s, c', VOLATILE, 'Each service links to its AWS documentation. Cost notes and limits are descriptive and unverified.'],
       ['Model registry', 'models', VOLATILE, 'Specs and prices are hand-entered and may be out of date.'],
       ['Service selector, FinOps', 'selector, finops', VOLATILE, 'Dollar figures are examples. Use the Cost and ROI calculators with your own prices.'],
-      ['Architectures, decisions, playbooks', 'a, d, p', GUIDE, 'Patterns and trade-offs. Not a substitute for the AWS Well-Architected guidance or your own review.'],
+      ['Architectures, decisions, playbooks, glossary', 'a, d, p, glossary', GUIDE, 'Patterns and trade-offs. Not a substitute for the AWS Well-Architected guidance or your own review.'],
       ['Delivery, evaluation, operations, security, leadership, toolkit, labs, architecture review', 'delivery, eval, ops, gov, leadership, toolkit, labs, arch-review', GUIDE, 'Frameworks, checklists and templates with example thresholds.'],
       ['Static example Command Centre', 'command/sample', 'Illustrative', 'Hand-written example figures. Your dashboard (Command Centre) uses only records you enter.'],
       ['My workspace pages and calculators', 'command, portfolio, registers, calc, workspace', 'User data', 'Show only what you type. Calculators use no built-in prices.']

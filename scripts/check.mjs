@@ -288,6 +288,29 @@ for (const c of A.categories) {
   checkText(`category ${c.id}.lens`, c.lens);
 }
 
+// Glossary: unique ids, known groups, valid [[service]] links, and every "rel" link points at a real page.
+{
+  const G = A.glossary || [], groups = new Set((A.glossaryGroups || []).map(g => g.id)), seen = new Set();
+  if (G.length < 30) err(`glossary has only ${G.length} terms`);
+  const decSet = new Set(A.decisions.map(d => d.id)), pbSet = new Set(A.engineeringPlaybooks.map(p => p.id));
+  const pages = new Set(['services', 'selector', 'models', 'eval', 'finops', 'ops', 'gov', 'leadership', 'labs', 'delivery', 'arch-review', 'toolkit', 'command', 'portfolio', 'registers', 'workspace', 'learn', 'lead', 'glossary']);
+  const calcs = new Set(['llm', 'rag', 'agent', 'compare', 'budget', 'capacity', 'unit', 'optimize', 'roi', 'saved']);
+  for (const g of G) {
+    const w = `glossary ${g.id}`;
+    if (seen.has(g.id)) err(`${w}: duplicate id`); seen.add(g.id);
+    if (!/^[a-z0-9-]+$/.test(g.id || '')) err(`${w}: id must match [a-z0-9-]+`);
+    if (!groups.has(g.group)) err(`${w}: unknown group ${g.group}`);
+    if (!g.term) err(`${w}: missing term`);
+    checkText(`${w}.def`, g.def); checkText(`${w}.aws`, g.aws);
+  }
+  for (const g of G) for (const href of g.rel || []) {
+    const [, k, id] = href.split('/');
+    const ok = k === 's' ? ids.has(id) : k === 'a' ? archIds.has(id) : k === 'd' ? (decSet.has(id) || ['em', 'pe', 'shaper', 'checklists', 'calculator'].includes(id)) :
+      k === 'p' ? pbSet.has(id) : k === 'c' ? cats.has(id) : k === 'calc' ? calcs.has(id) : k === 'glossary' ? (!id || seen.has(id)) : (pages.has(k) && !id);
+    if (!ok) err(`glossary ${g.id}: rel ${href} is not a page`);
+  }
+}
+
 // Every script referenced by index.html must exist, and the workspace libraries/UI must be loaded before app.js.
 const allScripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
 for (const s of allScripts) if (!fs.existsSync(path.join(root, s))) err(`index.html references missing script ${s}`);

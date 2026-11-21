@@ -40,3 +40,17 @@ test('the search dialog has filter and status regions', () => {
   assert.match(html, /id="searchFilters"/);
   assert.match(html, /id="searchStatus"[^>]*aria-live="polite"/);
 });
+
+test('generated app.js renders **bold**, [[links]] and paragraphs (regexes are not double-escaped)', async () => {
+  const app = read('assets/app.js');
+  const body = app.match(/function fmt\(s\) \{[\s\S]*?\n  \}/)[0];
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmt = new Function('esc', 'byId', body + '; return fmt;')(esc, { s3: { name: 'Amazon S3' } });
+  assert.equal(fmt('a **b** [[s3]] [[s3|bucket]] `c`'), 'a <strong>b</strong> <a href="#/s/s3">Amazon S3</a> <a href="#/s/s3">bucket</a> <code>c</code>');
+  assert.match(app, /split\(\/\\n\\n\+\/\)/, 'paras() must split on blank lines');
+});
+
+test('top navigation has exactly the four sections', () => {
+  const nav = html.match(/<nav class="top-links"[\s\S]*?<\/nav>/)[0];
+  assert.deepEqual([...nav.matchAll(/data-sec="([a-z]+)"/g)].map(m => m[1]), ['home', 'learn', 'lead', 'workspace']);
+});
