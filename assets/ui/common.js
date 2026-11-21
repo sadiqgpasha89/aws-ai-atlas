@@ -149,7 +149,7 @@
   function stamp() { return new Date().toISOString().slice(0, 10); }
   function fileName(base, ext) { return base + (ws.isSample() ? '-SAMPLE' : '') + '-' + stamp() + '.' + ext; }
 
-  function notFound(what) { return { html: '<h1>Not found</h1><p class="lede">' + esc(what || 'That page') + ' does not exist. <a href="#/">Back to the Command Centre</a>.</p>', title: 'Not found — AWS AI Atlas' }; }
+  function notFound(what) { return { html: '<h1>Not found</h1><p class="lede">' + esc(what || 'That page') + ' does not exist. <a href="#/">Back to the home page</a> or press <kbd>/</kbd> to search.</p>', title: 'Not found — AWS AI Atlas' }; }
 
   A.routes = A.routes || {};
   A.ui = { ws: ws, esc: esc, parseQuery: parseQuery, buildQuery: buildQuery, num: num, money: money, pct: pct, fmtDate: fmtDate, badge: badge, announce: announce, banner: banner, subnav: subnav,

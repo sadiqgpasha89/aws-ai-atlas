@@ -115,7 +115,7 @@
     render: function (parts, qs) {
       if (parts[0] === 'sample') {
         return { title: 'Static example Command Centre — AWS AI Atlas',
-          html: '<div class="wide"><div class="wbanner sample" role="note"><b>ILLUSTRATIVE STATIC CONTENT.</b> The projects, incidents, spend and health figures below are invented examples kept from the original Atlas to show what a command centre could contain. They are not your data and not live telemetry. <a href="#/">Go to the Command Centre built from your workspace</a>.</div></div>' + A.legacy.pageCommandCentre() };
+          html: '<div class="wide"><div class="wbanner sample" role="note"><b>ILLUSTRATIVE STATIC CONTENT.</b> The projects, incidents, spend and health figures below are invented examples kept from the original Atlas to show what a command centre could contain. They are not your data and not live telemetry. <a href="#/command">Go to the Command Centre built from your workspace</a>.</div></div>' + A.legacy.pageCommandCentre() };
       }
       var d = dashboard(qs);
       return { title: 'Command Centre — AWS AI Atlas', html: d.html, mount: function (root) { mount(root, d); } };

@@ -6,6 +6,21 @@ Live site: [https://sadiqgpasha89.github.io/aws-ai-atlas/](https://sadiqgpasha89
 
 ---
 
+## 🧭 How the site is organised (v2.0)
+
+Everything sits in one of three sections, reachable from the top bar. The sidebar shows only the section you are in, and every page has a breadcrumb trail. Long pages get an "On this page" jump list.
+
+| Section | Start at | What is in it |
+|---|---|---|
+| **Home** | `#/` | What the atlas is, the three sections, six goal-based reading paths (RAG, agents, production readiness, cost, security, leading a team) |
+| **Learn** | `#/learn` | Services catalogue, reference architectures, decision guides, playbooks, service selector, model registry, labs, **glossary** (`#/glossary`, 49 terms) |
+| **Lead** | `#/lead` | Delivery lifecycle, architecture review, evaluation, FinOps, operations and SRE, security and compliance, leadership, templates; plus "which page for which moment" |
+| **Workspace** | `#/command` | Your own dashboard, initiatives, prioritisation, registers, calculators and settings (browser storage only) |
+
+The look is deliberately minimal: neutral palette, one sans-serif typeface, hairline borders, no decorative shadows, light and dark themes.
+
+---
+
 ## 🏛️ System Overview
 
 AWS AI Atlas has evolved from an AWS architecture reference into a full **AI Engineering Management Operating System**. It bridges the gap between high-level executive strategy, architectural rigor, and hands-on production engineering. 
@@ -77,7 +92,7 @@ New workspace code lives in `assets/lib/` (pure logic, unit tested) and `assets/
 
 ## 🗂️ The 12 Operational Workspaces
 
-### 1. AI Engineering Manager Command Centre (`#/` & `#/command`)
+### 1. AI Engineering Manager Command Centre (`#/command`)
 A dashboard built **only** from the records you enter in your own workspace (see "My workspace" below). It shows active initiatives, items at risk or blocked, overdue milestones, open critical/high risks, overdue actions, pending decisions and entered cost estimates. Every number links to the records behind it. It never reads AWS, CloudWatch or any live system, and shows no figure you did not enter. An empty workspace shows a guided empty state; **Explore with sample data** loads clearly labelled fictional records.
 
 The original static page, whose figures were illustrative and hand-written, is kept at `#/command/sample` behind an "ILLUSTRATIVE STATIC CONTENT" banner.

@@ -6,7 +6,7 @@
   /* kind -> filter label. Order is the order of the filter chips. */
   var KINDS = [
     ['service', 'Services'], ['architecture', 'Architectures'], ['decision', 'Decisions'], ['playbook', 'Playbooks'],
-    ['model', 'Models'], ['runbook', 'Runbooks'], ['security', 'Security'], ['tool', 'Tools'], ['lab', 'Labs'], ['guide', 'Guides']
+    ['model', 'Models'], ['runbook', 'Runbooks'], ['security', 'Security'], ['tool', 'Tools'], ['lab', 'Labs'], ['glossary', 'Glossary'], ['guide', 'Guides']
   ];
 
   /* Acronyms and alternate terms. A query word that equals any member also matches every other member. */
@@ -119,7 +119,11 @@
 
     /* Top-level pages. Extra keywords widen discovery. */
     [
-      ['tool', '#/', 'Command Centre', 'Executive portfolio health, attention items, decisions today, daily schedule', 'Command Centre', 'command centre portfolio kpi attention decisions schedule'],
+      ['guide', '#/', 'Home', 'Start here: the three parts of the atlas and reading paths by goal', 'Home', 'home start here overview getting started paths goals'],
+      ['guide', '#/learn', 'Learn', 'Services, architectures, decision guides, playbooks, labs and glossary', 'Section', 'learn reference library overview'],
+      ['guide', '#/lead', 'Lead', 'Delivery, architecture review, evaluation, FinOps, SRE, security, leadership and templates', 'Section', 'lead management manager overview'],
+      ['glossary', '#/glossary', 'Glossary', 'Plain-language definitions of AI-on-AWS terms', 'Glossary', 'glossary terms definitions vocabulary meaning what is'],
+      ['tool', '#/command', 'Command Centre', 'Your workspace dashboard: portfolio health, attention items, risks and actions', 'Command Centre', 'command centre dashboard portfolio kpi attention decisions'],
       ['guide', '#/delivery', 'AI Project Delivery Lifecycle', '12 phases from discovery to decommission, 12 active squad initiatives', 'Lifecycle', 'delivery lifecycle phases portfolio roadmap projects gates'],
       ['guide', '#/arch-review', 'Architecture Review Board (ARB)', '12 review dimensions, risk calculator, systemic risk view across squads', 'Governance', 'arb architecture review risk scoring likelihood impact dimensions'],
       ['tool', '#/selector', 'AWS AI Service Selection Matrix', '14 workloads with recommended services and rejection reasons', 'Decision tool', 'selector service matrix workloads rag agent batch bedrock sagemaker'],
@@ -148,6 +152,7 @@
     each(A.delivery && A.delivery.phases, function (p) { add('guide', 'Delivery phase', '#/delivery', p.name, p.summary, 'Delivery', p); });
     each(A.archReview && A.archReview.dimensions, function (d) { add('guide', 'Review dimension', '#/arch-review', d.title, d.description, 'Architecture review', d); });
     each(A.labs && A.labs.exercises, function (e) { add('lab', 'Lab', '#/labs', e.title, e.goal, 'Labs', e); });
+    each(A.glossary, function (g) { add('glossary', 'Glossary', '#/glossary/' + g.id, g.term, String(g.def).replace(/\*\*|`/g, ''), 'Glossary', g, g.id + ' definition what is meaning'); });
     each(A.labs && A.labs.learningPaths, function (p) { add('lab', 'Learning path', '#/labs', p.role, p.objective, 'Labs', p); });
 
     /* Workspace and calculator pages are registered by assets/ui/*.js in the browser. */

@@ -25,9 +25,9 @@ test('no entry has an empty or broken name, summary or link', () => {
 
 test('every link resolves to a real route or record', () => {
   const ids = { s: new Set(A.services.map(x => x.id)), a: new Set(A.architectures.map(x => x.id)), d: new Set(A.decisions.map(x => x.id)), p: new Set(A.engineeringPlaybooks.map(x => x.id)) };
-  const modules = new Set(['', 'toolkit', 'selector', 'models', 'eval', 'finops', 'ops', 'gov', 'leadership', 'labs', 'delivery', 'arch-review', 'command', 'portfolio', 'registers', 'calc', 'workspace', 'about']);
+  const modules = new Set(['', 'toolkit', 'selector', 'models', 'eval', 'finops', 'ops', 'gov', 'leadership', 'labs', 'delivery', 'arch-review', 'command', 'portfolio', 'registers', 'calc', 'workspace', 'about', 'learn', 'lead', 'glossary']);
   const decTools = new Set(['em', 'pe', 'shaper', 'checklists', 'calculator']);
-  const sub = {};
+  const sub = { glossary: new Set((A.glossary || []).map(g => g.id)) };
   for (const it of index) {
     const [, kind, id] = it.href.split('/');
     if (kind === 'd') assert.ok(!id || decTools.has(id) || ids.d.has(id), `${it.href} does not exist`);
@@ -81,4 +81,11 @@ test('an empty query lists entries instead of an error state', () => {
 
 test('query is case-insensitive and ignores extra whitespace', () => {
   assert.deepEqual(top('  amazon bedrock   ').map(h => h.href), top('AMAZON BEDROCK').map(h => h.href));
+});
+
+test('glossary terms are searchable and link to their entry', () => {
+  assert.ok((A.glossary || []).length >= 30);
+  const hit = search.query(index, 'prompt injection', 'glossary', 5);
+  assert.ok(hit.length && hit[0].href === '#/glossary/prompt-injection', 'prompt injection glossary entry not found');
+  assert.ok(search.query(index, 'what is chunking', 'all', 10).some(h => h.href === '#/glossary/chunking'));
 });
